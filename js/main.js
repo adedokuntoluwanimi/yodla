@@ -162,7 +162,12 @@ function initPanel() {
   });
 }
 
-// ---- Scene fit (centered, full scene visible) ----
+// ---- Scene fit (centered + zoomed on mobile) ----
+
+const SCENE_VIEWBOX = {
+  desktop: "-100 0 1320 700",
+  mobile: "80 60 1040 540",
+};
 
 function initSceneFit() {
   const svg = document.querySelector(".scene__svg");
@@ -170,6 +175,10 @@ function initSceneFit() {
 
   const update = () => {
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    svg.setAttribute(
+      "viewBox",
+      isMobile ? SCENE_VIEWBOX.mobile : SCENE_VIEWBOX.desktop
+    );
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     document.body.classList.toggle("is-mobile", isMobile);
   };

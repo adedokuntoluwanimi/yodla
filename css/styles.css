@@ -54,15 +54,18 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  padding: 3.25rem 0 4.25rem;
+  pointer-events: none;
 }
 
 .scene__svg {
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: calc(100dvh - 7.5rem);
   display: block;
+  pointer-events: none;
 }
 
 /* Subtle light vignette */
@@ -413,7 +416,7 @@ body {
   }
 }
 
-/* Mobile — fit full scene, compact UI */
+/* Mobile — larger centered scene */
 @media (max-width: 768px) {
   html {
     font-size: 14px;
@@ -421,21 +424,19 @@ body {
 
   .page::after {
     background:
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, transparent 10%),
-      linear-gradient(to top, rgba(255, 255, 255, 0.7) 0%, transparent 16%);
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, transparent 8%),
+      linear-gradient(to top, rgba(255, 255, 255, 0.85) 0%, transparent 12%);
   }
 
   .scene {
-    inset: 2.5rem 0 3.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 2.75rem 0.25rem 4rem;
+    place-items: center;
   }
 
   .scene__svg {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
+    width: 108%;
+    max-width: 520px;
+    max-height: calc(100dvh - 6.5rem);
   }
 
   .brand {
@@ -514,7 +515,13 @@ body {
   }
 
   .scene {
-    inset: 2.25rem 0 3.5rem;
+    padding: 2.5rem 0 3.75rem;
+  }
+
+  .scene__svg {
+    width: 115%;
+    max-width: none;
+    max-height: calc(100dvh - 6rem);
   }
 
   .brand__name {
@@ -608,7 +615,12 @@ body {
   }
 
   .scene {
-    inset: 1.75rem 0 2.75rem;
+    padding: 1.5rem 0 2.5rem;
+  }
+
+  .scene__svg {
+    width: 100%;
+    max-height: calc(100dvh - 4rem);
   }
 
   .brand {
