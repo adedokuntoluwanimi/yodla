@@ -405,106 +405,148 @@ body {
 
 /* Tablet */
 @media (max-width: 900px) {
-  .scene {
-    transform: scale(1.15);
-    transform-origin: center bottom;
+  .brand__name {
+    font-size: 1.75rem;
   }
 }
 
-/* Mobile */
+/* Mobile — fit full scene, compact UI */
 @media (max-width: 768px) {
-  .brand {
-    top: max(1rem, env(safe-area-inset-top, 1rem));
-    left: max(1rem, env(safe-area-inset-left, 1rem));
-  }
-
-  .brand__name {
-    font-size: 1.6rem;
-    letter-spacing: 0.1em;
-  }
-
-  .brand__status {
-    font-size: 0.62rem;
-    letter-spacing: 0.2em;
-  }
-
-  /* Move social icons to top-right so they don't clash with signpost */
-  .site-footer {
-    top: max(1rem, env(safe-area-inset-top, 1rem));
-    right: max(1rem, env(safe-area-inset-right, 1rem));
-    left: auto;
-    bottom: auto;
-  }
-
-  .signpost {
-    bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .signpost:hover {
-    transform: translateX(-50%) scale(1.03);
-  }
-
-  .signpost__pole {
-    height: 56px;
-  }
-
-  .signpost__board {
-    min-width: 132px;
-    padding: 0.55rem 0.95rem;
-  }
-
-  .signpost__label {
-    font-size: 1.05rem;
-  }
-
-  .scene {
-    transform: scale(1.35);
-    transform-origin: 52% bottom;
+  html {
+    font-size: 14px;
   }
 
   .page::after {
     background:
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.7) 0%, transparent 12%),
-      linear-gradient(to top, rgba(255, 255, 255, 0.75) 0%, transparent 22%);
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, transparent 10%),
+      linear-gradient(to top, rgba(255, 255, 255, 0.7) 0%, transparent 16%);
+  }
+
+  .scene {
+    /* Let SVG "meet" show full scene — no zoom crop */
+    top: 2.75rem;
+    bottom: 4.5rem;
+  }
+
+  .scene__svg {
+    height: 100%;
+  }
+
+  .brand {
+    top: max(0.6rem, env(safe-area-inset-top, 0.6rem));
+    left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
+  }
+
+  .brand__name {
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+  }
+
+  .brand__status {
+    font-size: 0.55rem;
+    letter-spacing: 0.16em;
+    margin-top: 0.2rem;
+  }
+
+  .site-footer {
+    top: max(0.55rem, env(safe-area-inset-top, 0.55rem));
+    right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
+    left: auto;
+    bottom: auto;
+  }
+
+  .social__list {
+    gap: 0.35rem;
+  }
+
+  .social__link {
+    width: 30px;
+    height: 30px;
+  }
+
+  .social__link svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .signpost {
+    bottom: max(0.6rem, env(safe-area-inset-bottom, 0.6rem));
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%) scale(0.78);
+    transform-origin: center bottom;
+  }
+
+  .signpost:hover {
+    transform: translateX(-50%) scale(0.8);
+  }
+
+  .signpost__pole {
+    height: 36px;
+    width: 4px;
+  }
+
+  .signpost__board {
+    min-width: 108px;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .signpost__label {
+    font-size: 0.85rem;
+  }
+
+  .signpost__hint {
+    font-size: 0.5rem;
+    letter-spacing: 0.14em;
   }
 }
 
 /* Small phones */
 @media (max-width: 480px) {
-  .brand__name {
-    font-size: 1.35rem;
-  }
-
-  .brand__status {
-    letter-spacing: 0.15em;
-  }
-
-  .social__list {
-    gap: 0.5rem;
-  }
-
-  .social__link {
-    width: 40px;
-    height: 40px;
-  }
-
-  .signpost__pole {
-    height: 48px;
-  }
-
-  .signpost__board {
-    min-width: 120px;
+  html {
+    font-size: 13px;
   }
 
   .scene {
-    transform: scale(1.55);
-    transform-origin: 50% bottom;
+    top: 2.5rem;
+    bottom: 4rem;
   }
 
-  /* Bottom sheet panel on small screens */
+  .brand__name {
+    font-size: 1rem;
+  }
+
+  .brand__status {
+    font-size: 0.5rem;
+  }
+
+  .social__link {
+    width: 28px;
+    height: 28px;
+  }
+
+  .signpost {
+    transform: translateX(-50%) scale(0.7);
+  }
+
+  .signpost:hover {
+    transform: translateX(-50%) scale(0.72);
+  }
+
+  .signpost__pole {
+    height: 30px;
+  }
+
+  .signpost__board {
+    min-width: 96px;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .signpost__label {
+    font-size: 0.78rem;
+  }
+
+  /* Bottom sheet panel */
   .notify-panel {
     top: auto;
     bottom: 0;
@@ -512,12 +554,12 @@ body {
     right: 0;
     max-width: 100%;
     height: auto;
-    max-height: 88dvh;
-    padding: 2.5rem 1.25rem max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+    max-height: 85dvh;
+    padding: 2rem 1.15rem max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
     border-left: none;
     border-top: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.1);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.08);
     justify-content: flex-start;
     overflow-y: auto;
     transform: translateY(100%);
@@ -528,40 +570,50 @@ body {
   }
 
   .notify-panel__title {
-    font-size: 1.65rem;
+    font-size: 1.4rem;
+  }
+
+  .notify-panel__desc {
+    font-size: 0.82rem;
+    margin-bottom: 1.5rem;
   }
 
   .notify-form__input,
   .notify-form__btn {
-    font-size: 1rem;
-    padding: 0.9rem 1rem;
+    font-size: 0.9rem;
+    padding: 0.75rem 0.9rem;
   }
 }
 
 /* Very small screens */
 @media (max-width: 360px) {
+  .signpost {
+    transform: translateX(-50%) scale(0.64);
+  }
+
   .brand__name {
-    font-size: 1.2rem;
-  }
-
-  .signpost__label {
-    font-size: 0.95rem;
-  }
-
-  .signpost__hint {
-    font-size: 0.58rem;
+    font-size: 0.9rem;
   }
 }
 
 /* Landscape phones */
 @media (max-height: 500px) and (orientation: landscape) {
+  html {
+    font-size: 12px;
+  }
+
+  .scene {
+    top: 2rem;
+    bottom: 3rem;
+  }
+
   .brand {
-    top: 0.75rem;
-    left: 1rem;
+    top: max(0.4rem, env(safe-area-inset-top, 0.4rem));
+    left: 0.75rem;
   }
 
   .brand__name {
-    font-size: 1.2rem;
+    font-size: 0.95rem;
   }
 
   .brand__status {
@@ -569,35 +621,30 @@ body {
   }
 
   .site-footer {
-    top: 0.75rem;
-    right: 1rem;
+    top: max(0.4rem, env(safe-area-inset-top, 0.4rem));
+    right: 0.75rem;
   }
 
   .signpost {
-    bottom: 0.75rem;
-    transform: translateX(-50%) scale(0.85);
+    bottom: max(0.4rem, env(safe-area-inset-bottom, 0.4rem));
+    transform: translateX(-50%) scale(0.6);
   }
 
   .signpost__pole {
-    height: 40px;
-  }
-
-  .scene {
-    transform: scale(1.1);
-    transform-origin: center bottom;
+    height: 24px;
   }
 
   .notify-panel {
-    max-height: 95dvh;
-    padding-top: 2rem;
+    max-height: 92dvh;
+    padding-top: 1.5rem;
   }
 }
 
 @media (max-width: 640px) {
   .notify-panel {
     max-width: 100%;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
 }
 

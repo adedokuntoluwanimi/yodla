@@ -172,11 +172,31 @@ function initPanel() {
   });
 }
 
+// ---- Scene fit (show full construction on mobile) ----
+
+function initSceneFit() {
+  const svg = document.querySelector(".scene__svg");
+  if (!svg) return;
+
+  const update = () => {
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const ratio = isMobile
+      ? svg.dataset.ratioMobile || "xMidYMax meet"
+      : svg.dataset.ratioDesktop || "xMidYMax slice";
+    svg.setAttribute("preserveAspectRatio", ratio);
+    document.body.classList.toggle("is-mobile", isMobile);
+  };
+
+  update();
+  window.addEventListener("resize", update);
+}
+
 // ---- Init ----
 
 document.addEventListener("DOMContentLoaded", () => {
   renderSocialLinks();
   initPanel();
+  initSceneFit();
 
   const form = document.getElementById("notify-form");
   if (form) {

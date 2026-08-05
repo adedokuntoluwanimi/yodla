@@ -299,19 +299,10 @@
   }
 }
 
-/* Hide heavy scene elements on mobile for performance */
-@media (max-width: 768px) {
-  .forklift,
-  .worker--signal,
-  .mixer,
+/* Hide only lightest elements on small phones for performance */
+@media (max-width: 480px) {
   .dust-particles,
   .stars {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .worker--carry {
     display: none;
   }
 }
