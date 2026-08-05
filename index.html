@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Yodla — Coming Soon</title>
+  <meta name="description" content="Yodla is under construction. Premium drinks delivered to your door — coming soon to Nigeria.">
+  <meta property="og:title" content="Yodla — Coming Soon">
+  <meta property="og:description" content="Building something worth raising a glass to. Be the first to know when we open.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23ffffff' stroke='%23e0e0e0'/><text x='16' y='22' text-anchor='middle' font-family='serif' font-size='14' font-weight='600' fill='%239a7b2e'>Y</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div class="page">
+    <!-- Animated construction scene -->
+    <div class="scene" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="50%" stop-color="#f5f5f5"/>
+            <stop offset="100%" stop-color="#eceae6"/>
+          </linearGradient>
+          <linearGradient id="amberGlow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#9a7b2e" stop-opacity="0.06"/>
+            <stop offset="100%" stop-color="#9a7b2e" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="neonGlow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <!-- Drink bottle symbols -->
+          <symbol id="wine-bottle" viewBox="0 0 14 42">
+            <path d="M5 0h4v6c0 2 2 4 2 6v4c0 8-1 14-1 20 0 4-2 6-5 6s-5-2-5-6c0-6-1-12-1-20v-4c0-2 2-4 2-6V0z" fill="#1a2838"/>
+            <rect x="4" y="18" width="6" height="10" rx="1" fill="#2d1f3d" opacity="0.7"/>
+            <rect x="5" y="1" width="4" height="3" fill="#3a3a42"/>
+          </symbol>
+          <symbol id="beer-bottle" viewBox="0 0 12 34">
+            <path d="M3 0h6v4l1 4v2c0 6-1 12-1 18 0 3-1.5 6-4 6s-4-3-4-6c0-6-1-12-1-18v-2l1-4V0z" fill="#3d2818"/>
+            <rect x="2" y="10" width="8" height="8" fill="#c4a35a" opacity="0.5"/>
+            <rect x="4" y="1" width="4" height="2" fill="#8a7340"/>
+          </symbol>
+          <symbol id="champagne-bottle" viewBox="0 0 14 44">
+            <path d="M5 0h4v5l2 3v3c0 10-1 18-1 26 0 4-2 7-5 7s-5-3-5-7c0-8-1-16-1-26v-3l2-3V0z" fill="#1f3020"/>
+            <path d="M4 14h6l-1 8H5z" fill="#c4a35a" opacity="0.4"/>
+            <rect x="4" y="0" width="6" height="4" fill="#8a7340"/>
+          </symbol>
+          <symbol id="spirit-bottle" viewBox="0 0 12 36">
+            <path d="M2 0h8v5c0 2-1 4-1 6v3c0 8 0 14 0 20 0 3-2 5-5 5s-5-2-5-5c0-6 0-12 0-20v-3c0-2-1-4-1-6V0z" fill="#2a1810"/>
+            <rect x="3" y="12" width="6" height="9" fill="#8a7340" opacity="0.5"/>
+          </symbol>
+        </defs>
+
+        <!-- Sky -->
+        <rect width="1200" height="700" fill="url(#skyGrad)"/>
+
+        <!-- Soft clouds (daytime) -->
+        <g class="stars" opacity="0.35">
+          <ellipse cx="150" cy="80" rx="60" ry="18" fill="#e8e8e8"/>
+          <ellipse cx="200" cy="75" rx="40" ry="14" fill="#f0f0f0"/>
+          <ellipse cx="600" cy="60" rx="70" ry="20" fill="#e8e8e8"/>
+          <ellipse cx="660" cy="55" rx="45" ry="15" fill="#f0f0f0"/>
+          <ellipse cx="950" cy="90" rx="55" ry="16" fill="#e8e8e8"/>
+        </g>
+
+        <!-- Ground -->
+        <rect x="0" y="580" width="1200" height="120" fill="#e4e0d8"/>
+        <rect x="0" y="580" width="1200" height="3" fill="#c8c0b4" opacity="0.6"/>
+
+        <!-- Dust particles -->
+        <g class="dust-particles">
+          <circle class="dust dust--1" cx="300" cy="500" r="2" fill="#c8c0b4" opacity="0.5"/>
+          <circle class="dust dust--2" cx="450" cy="480" r="1.5" fill="#b8b0a4" opacity="0.4"/>
+          <circle class="dust dust--3" cx="600" cy="510" r="2" fill="#c8c0b4" opacity="0.45"/>
+          <circle class="dust dust--4" cx="750" cy="490" r="1.5" fill="#b8b0a4" opacity="0.4"/>
+          <circle class="dust dust--5" cx="900" cy="505" r="2" fill="#c8c0b4" opacity="0.5"/>
+        </g>
+
+        <!-- Drink house structure -->
+        <g class="drink-house" transform="translate(420, 200)">
+          <!-- Foundation -->
+          <rect x="0" y="340" width="360" height="40" fill="#d8d4cc" rx="2"/>
+          <!-- Back wall -->
+          <rect x="20" y="120" width="320" height="220" fill="#f5f2ec"/>
+          <!-- Timber beams -->
+          <rect x="20" y="120" width="12" height="220" fill="#8a7a60"/>
+          <rect x="328" y="120" width="12" height="220" fill="#8a7a60"/>
+          <rect x="20" y="120" width="320" height="10" fill="#8a7a60"/>
+          <rect x="20" y="200" width="320" height="8" fill="#8a7a60" opacity="0.7"/>
+          <rect x="20" y="280" width="320" height="8" fill="#8a7a60" opacity="0.7"/>
+          <!-- Arched doorway -->
+          <path d="M 130 340 L 130 220 Q 180 160 230 220 L 230 340" fill="#e8e4dc" stroke="#8a7a60" stroke-width="4"/>
+          <!-- Roof frame (incomplete) -->
+          <polygon points="0,120 180,40 360,120" fill="none" stroke="#8a7a60" stroke-width="6" stroke-linejoin="round"/>
+          <line x1="90" y1="80" x2="90" y2="120" stroke="#8a7a60" stroke-width="4"/>
+          <line x1="180" y1="40" x2="180" y2="120" stroke="#8a7a60" stroke-width="4"/>
+          <line x1="270" y1="80" x2="270" y2="120" stroke="#8a7a60" stroke-width="4"/>
+          <!-- Scaffolding — full construction wrap -->
+          <g class="scaffolding">
+            <!-- Left tower -->
+            <g stroke="#a0a0a8" stroke-width="2.5" fill="none">
+              <line x1="-40" y1="160" x2="-40" y2="380"/>
+              <line x1="-10" y1="160" x2="-10" y2="380"/>
+              <line x1="-40" y1="200" x2="-10" y2="230"/>
+              <line x1="-10" y1="200" x2="-40" y2="230"/>
+              <line x1="-40" y1="260" x2="-10" y2="290"/>
+              <line x1="-10" y1="260" x2="-40" y2="290"/>
+              <line x1="-40" y1="320" x2="-10" y2="350"/>
+              <line x1="-10" y1="320" x2="-40" y2="350"/>
+            </g>
+            <!-- Right tower -->
+            <g stroke="#a0a0a8" stroke-width="2.5" fill="none">
+              <line x1="370" y1="160" x2="370" y2="380"/>
+              <line x1="400" y1="160" x2="400" y2="380"/>
+              <line x1="370" y1="200" x2="400" y2="230"/>
+              <line x1="400" y1="200" x2="370" y2="230"/>
+              <line x1="370" y1="260" x2="400" y2="290"/>
+              <line x1="400" y1="260" x2="370" y2="290"/>
+              <line x1="370" y1="320" x2="400" y2="350"/>
+              <line x1="400" y1="320" x2="370" y2="350"/>
+            </g>
+            <!-- Front face cross-braces -->
+            <g stroke="#a0a0a8" stroke-width="2" fill="none" opacity="0.8">
+              <line x1="-40" y1="180" x2="400" y2="210"/>
+              <line x1="400" y1="180" x2="-40" y2="210"/>
+              <line x1="-40" y1="240" x2="400" y2="270"/>
+              <line x1="400" y1="240" x2="-40" y2="270"/>
+              <line x1="-40" y1="300" x2="400" y2="330"/>
+              <line x1="400" y1="300" x2="-40" y2="330"/>
+            </g>
+            <!-- Walk planks -->
+            <rect x="-42" y="228" width="444" height="6" fill="#c4b8a8" opacity="0.9"/>
+            <rect x="-42" y="288" width="444" height="6" fill="#c4b8a8" opacity="0.9"/>
+            <rect x="-42" y="348" width="444" height="6" fill="#c4b8a8" opacity="0.9"/>
+            <!-- Ladder -->
+            <g stroke="#b0b0b8" stroke-width="2">
+              <line x1="395" y1="160" x2="395" y2="380"/>
+              <line x1="405" y1="160" x2="405" y2="380"/>
+              <line x1="395" y1="190" x2="405" y2="190"/>
+              <line x1="395" y1="220" x2="405" y2="220"/>
+              <line x1="395" y1="250" x2="405" y2="250"/>
+              <line x1="395" y1="280" x2="405" y2="280"/>
+              <line x1="395" y1="310" x2="405" y2="310"/>
+              <line x1="395" y1="340" x2="405" y2="340"/>
+            </g>
+          </g>
+          <!-- Rooftop vent steam -->
+          <g class="steam" transform="translate(300, 100)">
+            <ellipse class="steam__puff steam__puff--1" cx="0" cy="0" rx="8" ry="5" fill="#c8c8c8" opacity="0.35"/>
+            <ellipse class="steam__puff steam__puff--2" cx="5" cy="-15" rx="10" ry="6" fill="#d0d0d0" opacity="0.25"/>
+            <ellipse class="steam__puff steam__puff--3" cx="-3" cy="-30" rx="12" ry="7" fill="#d8d8d8" opacity="0.2"/>
+          </g>
+        </g>
+
+        <!-- Cement mixer / cocktail shaker -->
+        <g class="mixer" transform="translate(180, 480)">
+          <rect x="0" y="20" width="60" height="40" fill="#555" rx="4"/>
+          <ellipse cx="30" cy="20" rx="30" ry="12" fill="#666"/>
+          <g class="mixer__drum">
+            <ellipse cx="30" cy="20" rx="22" ry="18" fill="#c4a35a" opacity="0.8"/>
+            <ellipse cx="30" cy="20" rx="18" ry="14" fill="#8a7340"/>
+          </g>
+          <rect x="25" y="0" width="10" height="15" fill="#888" rx="2"/>
+        </g>
+
+        <!-- Tower crane -->
+        <g class="crane" transform="translate(820, 80)">
+          <g class="crane__slewing">
+            <!-- Lattice mast -->
+            <g stroke="#5a5a64" stroke-width="2" fill="none">
+              <line x1="0" y1="0" x2="0" y2="460"/>
+              <line x1="18" y1="0" x2="18" y2="460"/>
+              <line x1="0" y1="0" x2="18" y2="30"/>
+              <line x1="18" y1="0" x2="0" y2="30"/>
+              <line x1="0" y1="30" x2="18" y2="60"/>
+              <line x1="18" y1="30" x2="0" y2="60"/>
+              <line x1="0" y1="60" x2="18" y2="90"/>
+              <line x1="18" y1="60" x2="0" y2="90"/>
+              <line x1="0" y1="90" x2="18" y2="120"/>
+              <line x1="18" y1="90" x2="0" y2="120"/>
+              <line x1="0" y1="120" x2="18" y2="150"/>
+              <line x1="18" y1="120" x2="0" y2="150"/>
+              <line x1="0" y1="150" x2="18" y2="180"/>
+              <line x1="18" y1="150" x2="0" y2="180"/>
+              <line x1="0" y1="180" x2="18" y2="210"/>
+              <line x1="18" y1="180" x2="0" y2="210"/>
+              <line x1="0" y1="210" x2="18" y2="240"/>
+              <line x1="18" y1="210" x2="0" y2="240"/>
+              <line x1="0" y1="240" x2="18" y2="270"/>
+              <line x1="18" y1="240" x2="0" y2="270"/>
+              <line x1="0" y1="270" x2="18" y2="300"/>
+              <line x1="18" y1="270" x2="0" y2="300"/>
+              <line x1="0" y1="300" x2="18" y2="330"/>
+              <line x1="18" y1="300" x2="0" y2="330"/>
+              <line x1="0" y1="330" x2="18" y2="360"/>
+              <line x1="18" y1="330" x2="0" y2="360"/>
+              <line x1="0" y1="360" x2="18" y2="390"/>
+              <line x1="18" y1="360" x2="0" y2="390"/>
+              <line x1="0" y1="390" x2="18" y2="420"/>
+              <line x1="18" y1="390" x2="0" y2="420"/>
+              <line x1="0" y1="420" x2="18" y2="450"/>
+              <line x1="18" y1="420" x2="0" y2="450"/>
+            </g>
+            <!-- Slewing unit + cab -->
+            <rect x="-8" y="-18" width="34" height="22" fill="#4a4a54" rx="2"/>
+            <rect x="2" y="-14" width="14" height="10" fill="#6a8aaa" opacity="0.5" rx="1"/>
+            <!-- Main jib -->
+            <g class="crane__jib">
+              <rect x="-6" y="-6" width="6" height="10" fill="#4a4a54"/>
+              <rect x="0" y="-4" width="240" height="6" fill="#5a5a64"/>
+              <rect x="0" y="-8" width="4" height="12" fill="#4a4a54"/>
+              <!-- Jib lattice underside -->
+              <g stroke="#4a4a54" stroke-width="1" fill="none" opacity="0.6">
+                <line x1="20" y1="-4" x2="40" y2="2"/>
+                <line x1="40" y1="-4" x2="20" y2="2"/>
+                <line x1="60" y1="-4" x2="80" y2="2"/>
+                <line x1="80" y1="-4" x2="60" y2="2"/>
+                <line x1="100" y1="-4" x2="120" y2="2"/>
+                <line x1="120" y1="-4" x2="100" y2="2"/>
+                <line x1="140" y1="-4" x2="160" y2="2"/>
+                <line x1="160" y1="-4" x2="140" y2="2"/>
+                <line x1="180" y1="-4" x2="200" y2="2"/>
+                <line x1="200" y1="-4" x2="180" y2="2"/>
+              </g>
+              <!-- Counter-jib -->
+              <rect x="-90" y="-4" width="90" height="5" fill="#5a5a64"/>
+              <rect x="-95" y="-2" width="18" height="14" fill="#3a3a42" rx="1"/>
+              <rect x="-72" y="0" width="14" height="12" fill="#3a3a42" rx="1"/>
+              <!-- Cable + hook trolley -->
+              <g class="crane__trolley">
+                <rect x="175" y="-6" width="10" height="8" fill="#3a3a42" rx="1"/>
+                <g class="crane__hook">
+                  <line x1="180" y1="2" x2="180" y2="120" stroke="#888" stroke-width="1.5"/>
+                  <line x1="177" y1="120" x2="183" y2="120" stroke="#888" stroke-width="1.5"/>
+                  <rect x="174" y="120" width="12" height="8" fill="#666" rx="1"/>
+                  <!-- Keg load -->
+                  <g transform="translate(168, 128)">
+                    <ellipse cx="14" cy="4" rx="14" ry="4" fill="#5a3a1a"/>
+                    <rect x="0" y="4" width="28" height="32" fill="#7a4a22" rx="2"/>
+                    <ellipse cx="14" cy="36" rx="14" ry="4" fill="#5a3a1a"/>
+                    <rect x="4" y="14" width="20" height="3" fill="#c4a35a" opacity="0.4"/>
+                    <rect x="4" y="22" width="20" height="3" fill="#c4a35a" opacity="0.4"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+
+        <!-- Worker 1: carrying crate — realistic walk -->
+        <g class="worker worker--carry">
+          <g class="worker__stride">
+            <!-- Shadow -->
+            <ellipse cx="22" cy="66" rx="18" ry="3" fill="#000" opacity="0.1"/>
+            <!-- Back leg -->
+            <g class="worker__leg worker__leg--back">
+              <path d="M20 40 L18 52 L17 64" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+              <path d="M16 62 L20 64 L24 62" fill="#1a1a22" stroke="#1a1a22" stroke-width="1"/>
+            </g>
+            <!-- Torso -->
+            <g class="worker__torso">
+              <path d="M14 24 Q22 22 30 24 L28 42 Q22 44 16 42 Z" fill="#b8862a"/>
+              <rect x="15" y="30" width="14" height="2" fill="#e8e0d0" opacity="0.5"/>
+              <path d="M14 24 Q22 22 30 24 L28 42 Q22 44 16 42 Z" fill="none" stroke="#8a6520" stroke-width="0.5"/>
+            </g>
+            <!-- Front leg -->
+            <g class="worker__leg worker__leg--front">
+              <path d="M24 40 L26 52 L27 64" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+              <path d="M23 62 L27 64 L31 62" fill="#1a1a22"/>
+            </g>
+            <!-- Arms holding crate -->
+            <g class="worker__arms-carry">
+              <path d="M14 28 L8 36" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+              <path d="M30 28 L36 36" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+            </g>
+            <!-- Crate with real bottles -->
+            <g class="worker__crate" transform="translate(4, 18)">
+              <rect x="0" y="14" width="36" height="22" fill="#4a3020" rx="2"/>
+              <line x1="0" y1="20" x2="36" y2="20" stroke="#3a2518" stroke-width="1"/>
+              <line x1="0" y1="28" x2="36" y2="28" stroke="#3a2518" stroke-width="1"/>
+              <use href="#wine-bottle" x="3" y="-8" width="8" height="24"/>
+              <use href="#beer-bottle" x="13" y="-2" width="7" height="20"/>
+              <use href="#spirit-bottle" x="22" y="-4" width="7" height="22"/>
+            </g>
+            <!-- Head -->
+            <g class="worker__head">
+              <ellipse cx="22" cy="16" rx="7" ry="8" fill="#6b5344"/>
+              <path d="M14 14 Q22 6 30 14 Q28 10 22 9 Q16 10 14 14" fill="#c4a35a"/>
+              <ellipse cx="22" cy="14" rx="8" ry="4" fill="#c4a35a"/>
+            </g>
+          </g>
+        </g>
+
+        <!-- Worker 2: on scaffolding, driving nails -->
+        <g class="worker worker--hammer" transform="translate(748, 432)">
+          <ellipse cx="20" cy="58" rx="16" ry="3" fill="#000" opacity="0.1"/>
+          <!-- Legs planted on plank -->
+          <path d="M12 38 L10 56" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M28 38 L30 56" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M8 55 L12 57 L16 55" fill="#1a1a22"/>
+          <path d="M26 55 L30 57 L34 55" fill="#1a1a22"/>
+          <!-- Torso leaning into work -->
+          <g class="worker__torso">
+            <path d="M10 22 Q20 18 30 24 L28 40 Q20 42 12 38 Z" fill="#b8862a"/>
+            <rect x="13" y="28" width="14" height="2" fill="#e8e0d0" opacity="0.5"/>
+          </g>
+          <!-- Left arm bracing scaffold -->
+          <path d="M12 26 L2 20" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="2" cy="20" r="3" fill="#5c4030"/>
+          <!-- Hammer arm -->
+          <g class="worker__hammer-arm">
+            <path d="M28 26 L38 14" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+            <rect x="36" y="6" width="5" height="14" fill="#6a6a72" rx="1" transform="rotate(35 38 12)"/>
+            <rect x="34" y="4" width="10" height="5" fill="#4a4a52" rx="1" transform="rotate(35 38 6)"/>
+          </g>
+          <!-- Head looking at work -->
+          <ellipse cx="20" cy="14" rx="7" ry="8" fill="#6b5344"/>
+          <path d="M12 12 Q20 4 28 12 Q26 8 20 7 Q14 8 12 12" fill="#c4a35a"/>
+          <!-- Nail + wood -->
+          <circle cx="42" cy="48" r="1.5" fill="#888"/>
+          <rect x="38" y="46" width="12" height="4" fill="#5c5340" rx="1"/>
+        </g>
+
+        <!-- Worker 3: welding sign bracket -->
+        <g class="worker worker--weld" transform="translate(488, 448)">
+          <ellipse cx="22" cy="52" rx="14" ry="3" fill="#000" opacity="0.1"/>
+          <!-- Crouching legs -->
+          <path d="M10 34 L6 48 L4 50" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M30 34 L34 48 L36 50" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <!-- Torso bent forward -->
+          <path d="M12 20 Q22 16 32 22 L30 36 Q22 38 14 34 Z" fill="#b8862a"/>
+          <!-- Welding arm extended -->
+          <g class="worker__weld-arm">
+            <path d="M30 24 L44 20" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+            <path d="M44 20 L52 18" stroke="#4a4a52" stroke-width="3" stroke-linecap="round" fill="none"/>
+            <circle cx="52" cy="18" r="2" fill="#3a3a42"/>
+          </g>
+          <!-- Other hand steadying -->
+          <path d="M14 26 L8 30" stroke="#5c4030" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <!-- Welding helmet -->
+          <g class="worker__helmet">
+            <ellipse cx="22" cy="12" rx="9" ry="10" fill="#3a3a42"/>
+            <rect x="14" y="8" width="16" height="6" fill="#2a4a6a" rx="2" opacity="0.8"/>
+            <path d="M13 6 Q22 0 31 6" fill="#c4a35a"/>
+          </g>
+          <!-- Weld flash + sparks -->
+          <g class="weld-effect">
+            <circle class="weld-flash" cx="54" cy="18" r="6" fill="#fff" opacity="0"/>
+            <circle class="spark spark--1" cx="56" cy="14" r="1.5" fill="#ffb347"/>
+            <circle class="spark spark--2" cx="58" cy="20" r="1" fill="#ff6b35"/>
+            <circle class="spark spark--3" cx="53" cy="12" r="1.2" fill="#ffd700"/>
+            <circle class="spark spark--4" cx="60" cy="16" r="0.8" fill="#ff8c42"/>
+          </g>
+        </g>
+
+        <!-- Worker 4: guiding crane load from ground -->
+        <g class="worker worker--signal" transform="translate(680, 530)">
+          <ellipse cx="18" cy="58" rx="14" ry="3" fill="#000" opacity="0.1"/>
+          <path d="M12 36 L10 54" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M24 36 L26 54" stroke="#2a3545" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M8 53 L12 55 L16 53" fill="#1a1a22"/>
+          <path d="M22 53 L26 55 L30 53" fill="#1a1a22"/>
+          <path d="M10 20 Q18 16 26 20 L24 36 Q18 38 12 36 Z" fill="#b8862a"/>
+          <rect x="12" y="24" width="12" height="2" fill="#e8e0d0" opacity="0.5"/>
+          <!-- Arms signaling -->
+          <g class="worker__signal-arms">
+            <path d="M10 22 L2 10" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+            <path d="M26 22 L34 8" stroke="#5c4030" stroke-width="4" stroke-linecap="round" fill="none"/>
+          </g>
+          <ellipse cx="18" cy="12" rx="7" ry="8" fill="#6b5344"/>
+          <path d="M10 10 Q18 2 26 10 Q24 6 18 5 Q12 6 10 10" fill="#c4a35a"/>
+        </g>
+
+        <!-- OPEN SOON neon sign -->
+        <g class="neon-sign" transform="translate(490, 360)" filter="url(#neonGlow)">
+          <rect x="0" y="0" width="160" height="36" fill="#ffffff" rx="4" stroke="#9a7b2e" stroke-width="2"/>
+          <text x="80" y="24" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="500" letter-spacing="0.15em" fill="#9a7b2e" class="neon-sign__text">OPEN SOON</text>
+        </g>
+
+        <!-- Forklift with realistic drink pallet -->
+        <g class="forklift" transform="translate(-140, 488)">
+          <ellipse cx="35" cy="78" rx="40" ry="4" fill="#000" opacity="0.1"/>
+          <!-- Rear wheel -->
+          <circle cx="12" cy="72" r="11" fill="#222"/>
+          <circle cx="12" cy="72" r="6" fill="#444"/>
+          <!-- Body -->
+          <rect x="8" y="38" width="55" height="28" fill="#4a4a54" rx="2"/>
+          <rect x="8" y="38" width="55" height="6" fill="#3a3a42"/>
+          <!-- Counterweight -->
+          <rect x="8" y="44" width="18" height="18" fill="#333" rx="1"/>
+          <!-- Mast -->
+          <rect x="48" y="10" width="5" height="50" fill="#5a5a64"/>
+          <rect x="55" y="10" width="5" height="50" fill="#5a5a64"/>
+          <!-- Cabin -->
+          <rect x="28" y="18" width="28" height="24" fill="#4a4a54" rx="2"/>
+          <rect x="32" y="22" width="18" height="12" fill="#5a7a9a" opacity="0.4" rx="1"/>
+          <!-- Forks -->
+          <rect x="-30" y="56" width="38" height="3" fill="#7a7a82"/>
+          <rect x="-30" y="63" width="38" height="3" fill="#7a7a82"/>
+          <!-- Front wheel -->
+          <circle cx="58" cy="72" r="9" fill="#222"/>
+          <circle cx="58" cy="72" r="5" fill="#444"/>
+          <!-- Pallet -->
+          <g transform="translate(-22, 28)">
+            <rect x="0" y="24" width="58" height="6" fill="#5c5340"/>
+            <rect x="2" y="26" width="54" height="2" fill="#4a4038"/>
+            <!-- Bottles on pallet -->
+            <use href="#champagne-bottle" x="2" y="-6" width="11" height="32"/>
+            <use href="#wine-bottle" x="14" y="-10" width="10" height="30"/>
+            <use href="#beer-bottle" x="26" y="-4" width="9" height="26"/>
+            <use href="#spirit-bottle" x="37" y="-8" width="9" height="28"/>
+            <use href="#wine-bottle" x="47" y="-10" width="10" height="30"/>
+          </g>
+        </g>
+
+        <!-- Yodla sign being hung -->
+        <g class="yodla-sign" transform="translate(510, 175)">
+          <rect x="0" y="0" width="120" height="40" fill="#ffffff" rx="4" stroke="#9a7b2e" stroke-width="2"/>
+          <text x="60" y="28" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="22" font-weight="600" letter-spacing="0.1em" fill="#9a7b2e">YODLA</text>
+          <!-- Hanging chains -->
+          <line x1="20" y1="0" x2="20" y2="-15" stroke="#b0b0b0" stroke-width="2"/>
+          <line x1="100" y1="0" x2="100" y2="-15" stroke="#b0b0b0" stroke-width="2"/>
+        </g>
+
+        <!-- Ambient amber glow behind building -->
+        <ellipse cx="600" cy="450" rx="200" ry="80" fill="url(#amberGlow)"/>
+      </svg>
+    </div>
+
+    <!-- Minimal branding — corners only, scene stays visible -->
+    <header class="brand">
+      <p class="brand__name">Yodla</p>
+      <p class="brand__status">Under construction</p>
+    </header>
+
+    <!-- Clickable signpost — reveals notify panel -->
+    <button class="signpost" id="signpost-trigger" type="button" aria-expanded="false" aria-controls="notify-panel">
+      <span class="signpost__pole" aria-hidden="true"></span>
+      <span class="signpost__board">
+        <span class="signpost__label">Get notified</span>
+        <span class="signpost__hint">when we open</span>
+      </span>
+    </button>
+
+    <footer class="site-footer">
+      <nav class="social" aria-label="Social media links">
+        <ul class="social__list" id="social-links"></ul>
+      </nav>
+    </footer>
+
+    <!-- Backdrop + notify panel (hidden until signpost click) -->
+    <div class="panel-backdrop" id="panel-backdrop" hidden></div>
+
+    <aside class="notify-panel" id="notify-panel" role="dialog" aria-labelledby="panel-title" aria-modal="true" hidden>
+      <button class="notify-panel__close" id="panel-close" type="button" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <h2 class="notify-panel__title" id="panel-title">Stay in the loop</h2>
+      <p class="notify-panel__desc">We'll let you know when Yodla opens its doors.</p>
+
+      <form class="notify-form" id="notify-form" novalidate>
+        <label class="notify-form__label" for="email">Email address</label>
+        <div class="notify-form__row">
+          <input
+            class="notify-form__input"
+            type="email"
+            id="email"
+            name="email"
+            placeholder="you@email.com"
+            autocomplete="email"
+            required
+          >
+          <button class="notify-form__btn" type="submit">Notify me</button>
+        </div>
+        <p class="notify-form__status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </aside>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

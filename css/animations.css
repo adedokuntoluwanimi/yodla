@@ -1,0 +1,317 @@
+/* ============================================
+   Yodla — Scene animations
+   ============================================ */
+
+/* ---- Tower crane ---- */
+
+.crane__slewing {
+  transform-origin: 9px 0;
+  animation: craneSlew 20s ease-in-out infinite;
+}
+
+.crane__trolley {
+  animation: trolleyMove 20s ease-in-out infinite;
+}
+
+.crane__hook {
+  animation: hookLift 20s ease-in-out infinite;
+}
+
+@keyframes craneSlew {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-4deg); }
+  70% { transform: rotate(2deg); }
+}
+
+@keyframes trolleyMove {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-40px); }
+  60% { transform: translateX(-40px); }
+}
+
+@keyframes hookLift {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(25px); }
+  65% { transform: translateY(25px); }
+}
+
+/* ---- Worker carrying crate — realistic gait ---- */
+
+.worker--carry {
+  animation: carrierWalk 16s linear infinite;
+}
+
+.worker--carry .worker__stride {
+  animation: bodyBob 0.6s ease-in-out infinite;
+}
+
+.worker--carry .worker__leg--back {
+  transform-origin: 20px 40px;
+  animation: legBack 0.6s ease-in-out infinite;
+}
+
+.worker--carry .worker__leg--front {
+  transform-origin: 24px 40px;
+  animation: legFront 0.6s ease-in-out infinite;
+}
+
+.worker--carry .worker__torso {
+  transform-origin: 22px 40px;
+  animation: torsoLean 0.6s ease-in-out infinite;
+}
+
+.worker--carry .worker__crate {
+  animation: crateBob 0.6s ease-in-out infinite;
+}
+
+@keyframes carrierWalk {
+  0% { transform: translate(60px, 518px); }
+  100% { transform: translate(720px, 518px); }
+}
+
+@keyframes bodyBob {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(1px); }
+  50% { transform: translateY(-2px); }
+  75% { transform: translateY(1px); }
+}
+
+@keyframes legBack {
+  0% { transform: rotate(22deg); }
+  25% { transform: rotate(5deg); }
+  50% { transform: rotate(-28deg); }
+  75% { transform: rotate(-5deg); }
+  100% { transform: rotate(22deg); }
+}
+
+@keyframes legFront {
+  0% { transform: rotate(-28deg); }
+  25% { transform: rotate(-5deg); }
+  50% { transform: rotate(22deg); }
+  75% { transform: rotate(5deg); }
+  100% { transform: rotate(-28deg); }
+}
+
+@keyframes torsoLean {
+  0%, 100% { transform: rotate(2deg); }
+  50% { transform: rotate(-1deg); }
+}
+
+@keyframes crateBob {
+  0%, 100% { transform: translate(4px, 18px); }
+  50% { transform: translate(4px, 15px); }
+}
+
+/* ---- Worker hammering on scaffold ---- */
+
+.worker--hammer .worker__hammer-arm {
+  transform-origin: 28px 26px;
+  animation: hammerStrike 0.9s ease-in-out infinite;
+}
+
+.worker--hammer .worker__torso {
+  transform-origin: 20px 38px;
+  animation: hammerLean 0.9s ease-in-out infinite;
+}
+
+@keyframes hammerStrike {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(-55deg); }
+  55% { transform: rotate(8deg); }
+  70% { transform: rotate(-10deg); }
+}
+
+@keyframes hammerLean {
+  0%, 100% { transform: rotate(0deg); transform-origin: 20px 38px; }
+  55% { transform: rotate(3deg); transform-origin: 20px 38px; }
+}
+
+/* ---- Worker welding ---- */
+
+.worker--weld .worker__weld-arm {
+  transform-origin: 30px 24px;
+  animation: weldArm 2s ease-in-out infinite;
+}
+
+.weld-flash {
+  animation: weldFlash 2s ease-in-out infinite;
+}
+
+@keyframes weldArm {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes weldFlash {
+  0%, 100% { opacity: 0; r: 4; }
+  48% { opacity: 0; }
+  50% { opacity: 0.9; }
+  52% { opacity: 0.3; }
+  54% { opacity: 0.8; }
+  56% { opacity: 0; }
+}
+
+/* ---- Worker signaling crane ---- */
+
+.worker--signal .worker__signal-arms {
+  transform-origin: 18px 22px;
+  animation: signalArms 3s ease-in-out infinite;
+}
+
+@keyframes signalArms {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  50% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+/* ---- Welding sparks ---- */
+
+.spark {
+  opacity: 0;
+}
+
+.spark--1 { animation: sparkFly 0.6s ease-out infinite 0s; }
+.spark--2 { animation: sparkFly 0.6s ease-out infinite 0.15s; }
+.spark--3 { animation: sparkFly 0.6s ease-out infinite 0.3s; }
+.spark--4 { animation: sparkFly 0.6s ease-out infinite 0.45s; }
+
+@keyframes sparkFly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(12px, -16px) scale(0.2); }
+}
+
+/* ---- Neon sign ---- */
+
+.neon-sign__text {
+  animation: neonFlicker 8s ease-in-out infinite;
+}
+
+@keyframes neonFlicker {
+  0%, 100% { opacity: 1; }
+  97% { opacity: 1; }
+  98% { opacity: 0.7; }
+  99% { opacity: 1; }
+}
+
+.yodla-sign {
+  animation: signSway 10s ease-in-out infinite;
+}
+
+@keyframes signSway {
+  0%, 100% { transform: translate(510px, 175px) rotate(0deg); }
+  50% { transform: translate(510px, 176px) rotate(0.4deg); }
+}
+
+/* ---- Forklift ---- */
+
+.forklift {
+  animation: forkliftDrive 30s linear infinite;
+}
+
+@keyframes forkliftDrive {
+  0% { transform: translate(-140px, 488px); }
+  100% { transform: translate(1150px, 488px); }
+}
+
+/* ---- Mixer ---- */
+
+.mixer__drum {
+  transform-origin: 30px 20px;
+  animation: mixerSpin 6s linear infinite;
+}
+
+@keyframes mixerSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ---- Steam ---- */
+
+.steam__puff--1 { animation: steamRise 5s ease-out infinite 0s; }
+.steam__puff--2 { animation: steamRise 5s ease-out infinite 1.6s; }
+.steam__puff--3 { animation: steamRise 5s ease-out infinite 3.2s; }
+
+@keyframes steamRise {
+  0% { opacity: 0.1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+
+/* ---- Dust ---- */
+
+.dust--1 { animation: dustFloat 9s ease-in-out infinite 0s; }
+.dust--2 { animation: dustFloat 11s ease-in-out infinite 2s; }
+.dust--3 { animation: dustFloat 8s ease-in-out infinite 4s; }
+.dust--4 { animation: dustFloat 10s ease-in-out infinite 1s; }
+.dust--5 { animation: dustFloat 9s ease-in-out infinite 5s; }
+
+@keyframes dustFloat {
+  0%, 100% { transform: translate(0, 0); opacity: 0.15; }
+  50% { transform: translate(12px, -18px); opacity: 0.3; }
+}
+
+/* ---- Stars ---- */
+
+.stars circle:nth-child(odd) {
+  animation: twinkle 6s ease-in-out infinite;
+}
+
+.stars circle:nth-child(even) {
+  animation: twinkle 8s ease-in-out infinite 3s;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+/* ---- Reduced motion ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  .crane__slewing,
+  .crane__trolley,
+  .crane__hook,
+  .worker--carry,
+  .worker--carry .worker__stride,
+  .worker--carry .worker__leg--back,
+  .worker--carry .worker__leg--front,
+  .worker--carry .worker__torso,
+  .worker--carry .worker__crate,
+  .worker--hammer .worker__hammer-arm,
+  .worker--weld .worker__weld-arm,
+  .worker--signal .worker__signal-arms,
+  .weld-flash,
+  .spark,
+  .neon-sign__text,
+  .yodla-sign,
+  .forklift,
+  .mixer__drum,
+  .steam__puff--1,
+  .steam__puff--2,
+  .steam__puff--3,
+  .dust--1,
+  .dust--2,
+  .dust--3,
+  .dust--4,
+  .dust--5,
+  .stars circle {
+    animation: none !important;
+  }
+}
+
+/* Hide heavy scene elements on mobile for performance */
+@media (max-width: 768px) {
+  .forklift,
+  .worker--signal,
+  .mixer,
+  .dust-particles,
+  .stars {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .worker--carry {
+    display: none;
+  }
+}
