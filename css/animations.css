@@ -206,12 +206,12 @@
 /* ---- Forklift ---- */
 
 .forklift {
-  animation: forkliftDrive 30s linear infinite;
+  animation: forkliftDrive 22s linear infinite;
 }
 
 @keyframes forkliftDrive {
-  0% { transform: translate(-140px, 488px); }
-  100% { transform: translate(1150px, 488px); }
+  0% { transform: translate(-80px, 488px); }
+  100% { transform: translate(1080px, 488px); }
 }
 
 /* ---- Mixer ---- */
@@ -296,13 +296,5 @@
   .dust--5,
   .stars circle {
     animation: none !important;
-  }
-}
-
-/* Hide only lightest elements on small phones for performance */
-@media (max-width: 480px) {
-  .dust-particles,
-  .stars {
-    display: none;
   }
 }

@@ -20,7 +20,7 @@
   <div class="page">
     <!-- Animated construction scene -->
     <div class="scene" aria-hidden="true">
-      <svg class="scene__svg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMax slice" data-ratio-desktop="xMidYMax slice" data-ratio-mobile="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
+      <svg class="scene__svg" viewBox="-100 0 1320 700" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#ffffff"/>
@@ -62,7 +62,7 @@
         </defs>
 
         <!-- Sky -->
-        <rect width="1200" height="700" fill="url(#skyGrad)"/>
+        <rect x="-100" y="0" width="1320" height="700" fill="url(#skyGrad)"/>
 
         <!-- Soft clouds (daytime) -->
         <g class="stars" opacity="0.35">
@@ -74,8 +74,8 @@
         </g>
 
         <!-- Ground -->
-        <rect x="0" y="580" width="1200" height="120" fill="#e4e0d8"/>
-        <rect x="0" y="580" width="1200" height="3" fill="#c8c0b4" opacity="0.6"/>
+        <rect x="-100" y="580" width="1320" height="120" fill="#e4e0d8"/>
+        <rect x="-100" y="580" width="1320" height="3" fill="#c8c0b4" opacity="0.6"/>
 
         <!-- Dust particles -->
         <g class="dust-particles">
@@ -388,7 +388,7 @@
         </g>
 
         <!-- Forklift with realistic drink pallet -->
-        <g class="forklift" transform="translate(-140, 488)">
+        <g class="forklift" transform="translate(-80, 488)">
           <ellipse cx="35" cy="78" rx="40" ry="4" fill="#000" opacity="0.1"/>
           <!-- Rear wheel -->
           <circle cx="12" cy="72" r="11" fill="#222"/>

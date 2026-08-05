@@ -54,6 +54,9 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .scene__svg {
@@ -423,13 +426,16 @@ body {
   }
 
   .scene {
-    /* Let SVG "meet" show full scene — no zoom crop */
-    top: 2.75rem;
-    bottom: 4.5rem;
+    inset: 2.5rem 0 3.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .scene__svg {
+    width: 100%;
     height: 100%;
+    max-height: 100%;
   }
 
   .brand {
@@ -508,8 +514,7 @@ body {
   }
 
   .scene {
-    top: 2.5rem;
-    bottom: 4rem;
+    inset: 2.25rem 0 3.5rem;
   }
 
   .brand__name {
@@ -603,8 +608,7 @@ body {
   }
 
   .scene {
-    top: 2rem;
-    bottom: 3rem;
+    inset: 1.75rem 0 2.75rem;
   }
 
   .brand {
