@@ -12,11 +12,13 @@
   --color-bg-deep: #ffffff;
   --color-bg: #f8f8f8;
   --color-surface: #ffffff;
+  --color-burgundy: #5c1f2a;
+  --color-burgundy-dark: #3d141c;
   --color-gold: #9a7b2e;
   --color-gold-dim: #b89a50;
   --color-text: #1a1a1a;
-  --color-text-muted: #6a6a6a;
-  --color-border: rgba(154, 123, 46, 0.2);
+  --color-text-muted: #4a4a4a;
+  --color-border: rgba(92, 31, 42, 0.2);
   --font-display: "Cormorant Garamond", Georgia, serif;
   --font-body: "Inter", system-ui, sans-serif;
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -81,33 +83,34 @@ body {
     radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.03) 100%);
 }
 
-/* ---- Brand (top-left, minimal) ---- */
+/* ---- Brand (top-left, logo) ---- */
 
 .brand {
   position: absolute;
-  top: 2rem;
-  left: 2rem;
+  top: 1.25rem;
+  left: 1.25rem;
   z-index: 2;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
 }
 
-.brand__name {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-gold);
-  line-height: 1;
+.brand__logo {
+  display: block;
+  width: 130px;
+  height: auto;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.08));
 }
 
 .brand__status {
-  margin-top: 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.25em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-burgundy-dark);
+  padding-left: 0.15rem;
 }
 
 /* ---- Signpost trigger ---- */
@@ -155,10 +158,10 @@ body {
   min-width: 148px;
   padding: 0.65rem 1.1rem;
   background: #ffffff;
-  border: 1px solid var(--color-gold-dim);
-  border-radius: 3px;
+  border: 2px solid var(--color-burgundy);
+  border-radius: 4px;
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 4px 16px rgba(92, 31, 42, 0.12),
     0 1px 3px rgba(0, 0, 0, 0.06);
   transform: rotate(-2deg);
   transition: border-color var(--transition), box-shadow var(--transition);
@@ -166,28 +169,28 @@ body {
 }
 
 .signpost:hover .signpost__board {
-  border-color: var(--color-gold);
+  border-color: var(--color-burgundy-dark);
   box-shadow:
-    0 6px 28px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(154, 123, 46, 0.1);
+    0 6px 24px rgba(92, 31, 42, 0.18),
+    0 0 0 1px rgba(92, 31, 42, 0.08);
 }
 
 .signpost__label {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--color-gold);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-burgundy-dark);
   line-height: 1.2;
 }
 
 .signpost__hint {
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
-  margin-top: 0.15rem;
+  color: var(--color-burgundy);
+  margin-top: 0.2rem;
 }
 
 @keyframes signpostIdle {
@@ -225,9 +228,9 @@ body {
 }
 
 .social__link:hover {
-  color: var(--color-gold);
+  color: var(--color-burgundy);
   border-color: var(--color-border);
-  background: rgba(154, 123, 46, 0.06);
+  background: rgba(92, 31, 42, 0.06);
 }
 
 .social__link:focus-visible {
@@ -310,11 +313,18 @@ body {
   outline-offset: 2px;
 }
 
+.notify-panel__logo {
+  display: block;
+  width: 72px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
 .notify-panel__title {
   font-family: var(--font-display);
   font-size: 2rem;
-  font-weight: 600;
-  color: var(--color-text);
+  font-weight: 700;
+  color: var(--color-burgundy-dark);
   letter-spacing: 0.02em;
   margin-bottom: 0.5rem;
 }
@@ -369,10 +379,10 @@ body {
   padding: 0.8rem 1.25rem;
   font-family: var(--font-body);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   color: #ffffff;
-  background: var(--color-gold);
+  background: var(--color-burgundy);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -380,7 +390,7 @@ body {
 }
 
 .notify-form__btn:hover {
-  background: #8a7340;
+  background: var(--color-burgundy-dark);
 }
 
 .notify-form__btn:focus-visible {
@@ -411,151 +421,143 @@ body {
 
 /* Tablet */
 @media (max-width: 900px) {
-  .brand__name {
-    font-size: 1.75rem;
+  .brand__logo {
+    width: 115px;
   }
 }
 
-/* Mobile — larger centered scene */
+/* Mobile — larger centered scene, readable text */
 @media (max-width: 768px) {
   html {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .page::after {
     background:
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, transparent 8%),
-      linear-gradient(to top, rgba(255, 255, 255, 0.85) 0%, transparent 12%);
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.6) 0%, transparent 6%),
+      linear-gradient(to top, rgba(255, 255, 255, 0.55) 0%, transparent 8%);
   }
 
   .scene {
-    padding: 2.75rem 0.25rem 4rem;
+    padding: 5.5rem 0 4.5rem;
     place-items: center;
   }
 
   .scene__svg {
-    width: 108%;
-    max-width: 520px;
-    max-height: calc(100dvh - 6.5rem);
+    width: 118%;
+    max-width: 560px;
+    max-height: calc(100dvh - 9.5rem);
   }
 
   .brand {
-    top: max(0.6rem, env(safe-area-inset-top, 0.6rem));
-    left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
+    top: max(0.5rem, env(safe-area-inset-top, 0.5rem));
+    left: max(0.65rem, env(safe-area-inset-left, 0.65rem));
   }
 
-  .brand__name {
-    font-size: 1.15rem;
-    letter-spacing: 0.08em;
+  .brand__logo {
+    width: 96px;
   }
 
   .brand__status {
-    font-size: 0.55rem;
-    letter-spacing: 0.16em;
-    margin-top: 0.2rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--color-burgundy-dark);
   }
 
   .site-footer {
-    top: max(0.55rem, env(safe-area-inset-top, 0.55rem));
-    right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
+    top: max(0.5rem, env(safe-area-inset-top, 0.5rem));
+    right: max(0.65rem, env(safe-area-inset-right, 0.65rem));
     left: auto;
     bottom: auto;
   }
 
-  .social__list {
-    gap: 0.35rem;
-  }
-
   .social__link {
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
+    border-color: rgba(92, 31, 42, 0.15);
+    color: var(--color-burgundy);
   }
 
   .social__link svg {
-    width: 13px;
-    height: 13px;
+    width: 15px;
+    height: 15px;
   }
 
   .signpost {
-    bottom: max(0.6rem, env(safe-area-inset-bottom, 0.6rem));
+    bottom: max(0.65rem, env(safe-area-inset-bottom, 0.65rem));
     right: auto;
     left: 50%;
-    transform: translateX(-50%) scale(0.78);
+    transform: translateX(-50%) scale(0.92);
     transform-origin: center bottom;
   }
 
   .signpost:hover {
-    transform: translateX(-50%) scale(0.8);
+    transform: translateX(-50%) scale(0.94);
   }
 
   .signpost__pole {
-    height: 36px;
-    width: 4px;
+    height: 40px;
+    width: 5px;
   }
 
   .signpost__board {
-    min-width: 108px;
-    padding: 0.4rem 0.7rem;
+    min-width: 130px;
+    padding: 0.55rem 0.85rem;
   }
 
   .signpost__label {
-    font-size: 0.85rem;
+    font-size: 0.92rem;
+    font-weight: 700;
   }
 
   .signpost__hint {
-    font-size: 0.5rem;
-    letter-spacing: 0.14em;
+    font-size: 0.58rem;
+    font-weight: 600;
   }
 }
 
 /* Small phones */
 @media (max-width: 480px) {
   html {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .scene {
-    padding: 2.5rem 0 3.75rem;
+    padding: 5rem 0 4.25rem;
   }
 
   .scene__svg {
-    width: 115%;
-    max-width: none;
-    max-height: calc(100dvh - 6rem);
+    width: 125%;
+    max-height: calc(100dvh - 8.5rem);
   }
 
-  .brand__name {
-    font-size: 1rem;
+  .brand__logo {
+    width: 88px;
   }
 
   .brand__status {
-    font-size: 0.5rem;
-  }
-
-  .social__link {
-    width: 28px;
-    height: 28px;
+    font-size: 0.58rem;
   }
 
   .signpost {
-    transform: translateX(-50%) scale(0.7);
+    transform: translateX(-50%) scale(0.88);
   }
 
   .signpost:hover {
-    transform: translateX(-50%) scale(0.72);
+    transform: translateX(-50%) scale(0.9);
   }
 
   .signpost__pole {
-    height: 30px;
+    height: 36px;
   }
 
   .signpost__board {
-    min-width: 96px;
-    padding: 0.35rem 0.6rem;
+    min-width: 120px;
   }
 
   .signpost__label {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
   }
 
   /* Bottom sheet panel */
@@ -599,12 +601,12 @@ body {
 
 /* Very small screens */
 @media (max-width: 360px) {
-  .signpost {
-    transform: translateX(-50%) scale(0.64);
+  .brand__logo {
+    width: 80px;
   }
 
-  .brand__name {
-    font-size: 0.9rem;
+  .signpost {
+    transform: translateX(-50%) scale(0.84);
   }
 }
 
@@ -628,8 +630,8 @@ body {
     left: 0.75rem;
   }
 
-  .brand__name {
-    font-size: 0.95rem;
+  .brand__logo {
+    width: 72px;
   }
 
   .brand__status {

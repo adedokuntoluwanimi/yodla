@@ -166,7 +166,7 @@ function initPanel() {
 
 const SCENE_VIEWBOX = {
   desktop: "-100 0 1320 700",
-  mobile: "80 60 1040 540",
+  mobile: "200 40 820 520",
 };
 
 function initSceneFit() {
