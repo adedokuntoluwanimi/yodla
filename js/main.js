@@ -1,201 +1,39 @@
-/**
- * Yodla — Coming Soon Page
- * Configuration and form handling
- */
-
-// ---- Configuration ----
-// Update these values before launch
-
-const CONFIG = {
-  // Replace with your Formspree form ID from https://formspree.io
-  // Example: "https://formspree.io/f/xyzabcde"
-  formspreeEndpoint: "https://formspree.io/f/YOUR_FORM_ID",
-
-  social: [
-    {
-      name: "Instagram",
-      url: "https://www.instagram.com/yodla.ng/",
-      icon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`,
-    },
-  ],
-};
-
-// ---- Social links ----
-
-function renderSocialLinks() {
-  const container = document.getElementById("social-links");
-  if (!container) return;
-
-  CONFIG.social.forEach(({ name, url, icon }) => {
-    const li = document.createElement("li");
-    const a = document.createElement("a");
-    a.className = "social__link";
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.setAttribute("aria-label", `Follow Yodla on ${name}`);
-    a.innerHTML = icon;
-    li.appendChild(a);
-    container.appendChild(li);
-  });
-}
-
-// ---- Email form ----
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function setStatus(el, message, type) {
-  el.textContent = message;
-  el.className = "notify-form__status";
-  if (type) el.classList.add(`notify-form__status--${type}`);
-}
-
-async function handleSubmit(e) {
-  e.preventDefault();
-
-  const form = e.target;
-  const emailInput = form.querySelector("#email");
-  const statusEl = document.getElementById("form-status");
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const email = emailInput.value.trim();
-
-  if (!isValidEmail(email)) {
-    setStatus(statusEl, "Please enter a valid email address.", "error");
-    emailInput.focus();
-    return;
-  }
-
-  if (CONFIG.formspreeEndpoint.includes("YOUR_FORM_ID")) {
-    setStatus(statusEl, "Thanks! We'll notify you when we launch.", "success");
-    form.reset();
-    return;
-  }
-
-  submitBtn.disabled = true;
-  setStatus(statusEl, "Sending...", null);
-
-  try {
-    const response = await fetch(CONFIG.formspreeEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    if (response.ok) {
-      setStatus(statusEl, "You're on the list! We'll be in touch.", "success");
-      form.reset();
-    } else {
-      const data = await response.json().catch(() => ({}));
-      const msg = data.error || "Something went wrong. Please try again.";
-      setStatus(statusEl, msg, "error");
-    }
-  } catch {
-    setStatus(statusEl, "Network error. Please check your connection.", "error");
-  } finally {
-    submitBtn.disabled = false;
-  }
-}
-
-// ---- Panel toggle ----
-
-function openPanel() {
-  const panel = document.getElementById("notify-panel");
-  const backdrop = document.getElementById("panel-backdrop");
-  const trigger = document.getElementById("signpost-trigger");
-
-  if (!panel || !backdrop) return;
-
-  backdrop.hidden = false;
-  panel.hidden = false;
-
-  requestAnimationFrame(() => {
-    backdrop.classList.add("is-visible");
-    panel.classList.add("is-visible");
-  });
-
-  trigger?.setAttribute("aria-expanded", "true");
-  document.body.style.overflow = "hidden";
-
-  const emailInput = document.getElementById("email");
-  setTimeout(() => emailInput?.focus(), 350);
-}
-
-function closePanel() {
-  const panel = document.getElementById("notify-panel");
-  const backdrop = document.getElementById("panel-backdrop");
-  const trigger = document.getElementById("signpost-trigger");
-
-  if (!panel || !backdrop) return;
-
-  backdrop.classList.remove("is-visible");
-  panel.classList.remove("is-visible");
-
-  trigger?.setAttribute("aria-expanded", "false");
-  document.body.style.overflow = "";
-
-  setTimeout(() => {
-    backdrop.hidden = true;
-    panel.hidden = true;
-    trigger?.focus();
-  }, 300);
-}
-
-function initPanel() {
-  const trigger = document.getElementById("signpost-trigger");
-  const closeBtn = document.getElementById("panel-close");
-  const backdrop = document.getElementById("panel-backdrop");
-
-  trigger?.addEventListener("click", openPanel);
-  closeBtn?.addEventListener("click", closePanel);
-  backdrop?.addEventListener("click", closePanel);
-
-  document.addEventListener("keydown", (e) => {
-    const panel = document.getElementById("notify-panel");
-    if (e.key === "Escape" && panel && !panel.hidden) {
-      closePanel();
-    }
-  });
-}
-
-// ---- Scene fit (centered + zoomed on mobile) ----
-
-const SCENE_VIEWBOX = {
-  desktop: "-100 0 1320 700",
-  mobile: "200 40 820 520",
-};
-
-function initSceneFit() {
-  const svg = document.querySelector(".scene__svg");
-  if (!svg) return;
-
-  const update = () => {
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-    svg.setAttribute(
-      "viewBox",
-      isMobile ? SCENE_VIEWBOX.mobile : SCENE_VIEWBOX.desktop
-    );
-    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-    document.body.classList.toggle("is-mobile", isMobile);
-  };
-
-  update();
-  window.addEventListener("resize", update);
-}
-
-// ---- Init ----
-
-document.addEventListener("DOMContentLoaded", () => {
-  renderSocialLinks();
-  initPanel();
-  initSceneFit();
-
-  const form = document.getElementById("notify-form");
-  if (form) {
-    form.addEventListener("submit", handleSubmit);
-  }
-});
+const products = [
+  { id: "bottega", name: "Bottega Gold Prosecco", brand: "Bottega", category: "Champagne", volume: "75cl · 11%", price: 38500, image: "assets/products/bottega-gold.png", tag: "A proper toast" },
+  { id: "hennessy", name: "Hennessy Very Special", brand: "Hennessy", category: "Spirits", volume: "70cl · 40%", price: 67000, image: "assets/products/hennessy-vs.jpg", tag: "Host’s choice" },
+  { id: "jack", name: "Jack Daniel’s Old No. 7", brand: "Jack Daniel’s", category: "Spirits", volume: "70cl · 40%", price: 42000, image: "assets/products/jack-daniels.png", tag: "Tennessee whiskey" },
+  { id: "heineken", name: "Heineken Original Lager", brand: "Heineken", category: "Beer", volume: "33cl · 5%", price: 1900, image: "assets/products/heineken.jpg", tag: "Serve cold" },
+  { id: "bottega-rose", name: "Bottega Gold Rosé", brand: "Bottega", category: "Wine", volume: "75cl · 11.5%", price: 39500, image: "assets/products/bottega-gold.png", tag: "For dinner" },
+  { id: "hennessy-cocktail", name: "Hennessy & Ginger Set", brand: "Hennessy", category: "Spirits", volume: "70cl · 40%", price: 69000, image: "assets/products/hennessy-vs.jpg", tag: "Easy serve" },
+  { id: "jack-gift", name: "Jack Daniel’s Gift Bottle", brand: "Jack Daniel’s", category: "Spirits", volume: "70cl · 40%", price: 45000, image: "assets/products/jack-daniels.png", tag: "Bring a bottle" },
+  { id: "heineken-pack", name: "Heineken Lager Pack", brand: "Heineken", category: "Beer", volume: "6 × 33cl · 5%", price: 10500, image: "assets/products/heineken.jpg", tag: "Weekend ready" },
+];
+const state = { cart: JSON.parse(localStorage.getItem("yodla-cart") || "[]"), category: "All", location: localStorage.getItem("yodla-location") || "" };
+const money = (amount) => `₦${amount.toLocaleString("en-NG")}`;
+const productGrid = document.getElementById("product-grid");
+const getProduct = (id) => products.find((product) => product.id === id);
+function saveCart() { localStorage.setItem("yodla-cart", JSON.stringify(state.cart)); }
+function renderProducts() { const shown = products.filter((product) => state.category === "All" || product.category === state.category); productGrid.innerHTML = shown.map((product) => `<article class="product-card" data-od-id="product-${product.id}"><div class="product-card__image"><span class="product-card__tag">${product.tag}</span><img src="${product.image}" alt="${product.name}"></div><h3>${product.name}</h3><p>${product.brand} · ${product.volume}</p><div class="product-card__bottom"><strong>${money(product.price)}</strong><button class="add-button" data-add="${product.id}" aria-label="Add ${product.name} to bag">+</button></div></article>`).join(""); document.querySelectorAll(".filter-chip").forEach((chip) => chip.classList.toggle("is-active", chip.dataset.category === state.category)); }
+function renderCart() { const count = state.cart.reduce((total, item) => total + item.quantity, 0); const total = state.cart.reduce((sum, item) => sum + getProduct(item.id).price * item.quantity, 0); document.getElementById("cart-count").textContent = count; document.getElementById("cart-total").textContent = money(total); const container = document.getElementById("cart-items"); container.innerHTML = state.cart.length ? state.cart.map((item) => { const product = getProduct(item.id); return `<div class="cart-row"><img src="${product.image}" alt=""><div class="cart-row__details"><h3>${product.name}</h3><p>${money(product.price)}</p><div class="quantity-control"><button data-quantity="${product.id}" data-change="-1" aria-label="Reduce quantity">−</button><span>${item.quantity}</span><button data-quantity="${product.id}" data-change="1" aria-label="Increase quantity">+</button><button class="remove-button" data-remove="${product.id}">Remove</button></div></div></div>`; }).join("") : `<p class="empty-state">Your bag is waiting for something good.</p>`; saveCart(); }
+function toast(message) { const el = document.getElementById("toast"); el.textContent = message; el.classList.add("is-visible"); window.setTimeout(() => el.classList.remove("is-visible"), 2200); }
+function addToCart(id) { const line = state.cart.find((item) => item.id === id); if (line) line.quantity += 1; else state.cart.push({ id, quantity: 1 }); renderCart(); toast(`${getProduct(id).name} added to your bag.`); }
+function adjustCart(id, change) { const line = state.cart.find((item) => item.id === id); if (!line) return; line.quantity += change; if (line.quantity < 1) state.cart = state.cart.filter((item) => item.id !== id); renderCart(); }
+function openDrawer(id) { document.getElementById("backdrop").hidden = false; document.querySelectorAll(".drawer").forEach((drawer) => drawer.classList.remove("is-open")); const drawer = document.getElementById(id); drawer.classList.add("is-open"); drawer.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; }
+function closeDrawers() { document.querySelectorAll(".drawer").forEach((drawer) => { drawer.classList.remove("is-open"); drawer.setAttribute("aria-hidden", "true"); }); document.getElementById("backdrop").hidden = true; document.body.style.overflow = ""; }
+function setCategory(category) { state.category = category; renderProducts(); closeDrawers(); document.getElementById("filter-count").textContent = category === "All" ? "" : "· 1"; }
+function renderSearch(term) { const result = products.filter((p) => `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(term.toLowerCase())); document.getElementById("search-results").innerHTML = term ? (result.length ? result.map((p) => `<button class="search-row" data-add="${p.id}"><img src="${p.image}" alt=""><span><h3>${p.name}</h3><p>${p.volume} · ${money(p.price)}</p></span></button>`).join("") : `<p class="empty-state">No bottles match that search yet.</p>`) : `<p class="empty-state">Try champagne, whisky, beer or a brand.</p>`; }
+document.addEventListener("click", (event) => { const add = event.target.closest("[data-add]"); const quantity = event.target.closest("[data-quantity]"); const remove = event.target.closest("[data-remove]"); const category = event.target.closest("[data-category]"); const occasion = event.target.closest("[data-filter]"); if (add) addToCart(add.dataset.add); if (quantity) adjustCart(quantity.dataset.quantity, Number(quantity.dataset.change)); if (remove) { state.cart = state.cart.filter((item) => item.id !== remove.dataset.remove); renderCart(); } if (category) setCategory(category.dataset.category); if (occasion) setCategory(occasion.dataset.filter); });
+document.getElementById("cart-trigger").addEventListener("click", () => openDrawer("cart-drawer"));
+document.getElementById("search-trigger").addEventListener("click", () => { openDrawer("search-drawer"); document.getElementById("search-input").focus(); });
+document.getElementById("location-trigger").addEventListener("click", () => openDrawer("location-drawer"));
+document.getElementById("filter-trigger").addEventListener("click", () => openDrawer("filter-drawer"));
+document.querySelectorAll("[data-close-drawer]").forEach((button) => button.addEventListener("click", closeDrawers));
+document.getElementById("backdrop").addEventListener("click", closeDrawers);
+document.getElementById("search-input").addEventListener("input", (event) => renderSearch(event.target.value));
+document.getElementById("save-location").addEventListener("click", () => { const location = document.getElementById("location-select").value; if (!location) return toast("Choose a state or city first."); state.location = location; localStorage.setItem("yodla-location", location); document.querySelector(".announcement").firstChild.textContent = `Delivery location: ${location}. `; closeDrawers(); toast(`Location set to ${location}.`); });
+document.getElementById("checkout-trigger").addEventListener("click", () => { if (!state.cart.length) return toast("Add a bottle before checkout."); closeDrawers(); document.getElementById("checkout-modal").hidden = false; });
+document.querySelectorAll("[data-close-modal]").forEach((button) => button.addEventListener("click", () => { document.getElementById("checkout-modal").hidden = true; }));
+document.querySelectorAll(".article-trigger").forEach((button) => button.addEventListener("click", () => toast("The Yodla Journal opens with the full editorial collection.")));
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeDrawers(); document.getElementById("checkout-modal").hidden = true; } });
+if (state.location) document.querySelector(".announcement").firstChild.textContent = `Delivery location: ${state.location}. `;
+renderProducts(); renderCart(); renderSearch("");
