@@ -32,8 +32,9 @@ document.getElementById("backdrop").addEventListener("click", closeDrawers);
 document.getElementById("search-input").addEventListener("input", (event) => renderSearch(event.target.value));
 document.getElementById("save-location").addEventListener("click", () => { const location = document.getElementById("location-select").value; if (!location) return toast("Choose a state or city first."); state.location = location; localStorage.setItem("yodla-location", location); document.querySelector(".announcement").firstChild.textContent = `Delivery location: ${location}. `; closeDrawers(); toast(`Location set to ${location}.`); });
 document.getElementById("checkout-trigger").addEventListener("click", () => { if (!state.cart.length) return toast("Add a bottle before checkout."); closeDrawers(); document.getElementById("checkout-modal").hidden = false; });
-document.querySelectorAll("[data-close-modal]").forEach((button) => button.addEventListener("click", () => { document.getElementById("checkout-modal").hidden = true; }));
+function closeCheckoutModal() { document.getElementById("checkout-modal").hidden = true; }
+document.getElementById("checkout-modal").addEventListener("click", (event) => { if (event.target === event.currentTarget || event.target.closest("[data-close-modal]")) closeCheckoutModal(); });
 document.querySelectorAll(".article-trigger").forEach((button) => button.addEventListener("click", () => toast("The Yodla Journal opens with the full editorial collection.")));
-document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeDrawers(); document.getElementById("checkout-modal").hidden = true; } });
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeDrawers(); closeCheckoutModal(); } });
 if (state.location) document.querySelector(".announcement").firstChild.textContent = `Delivery location: ${state.location}. `;
 renderProducts(); renderCart(); renderSearch("");
