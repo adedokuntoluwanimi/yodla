@@ -1,0 +1,10 @@
+{
+  "name": "yodla-admin",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "check": "node --check app.js && node --check api/content.js && node --check api/document.js && node --check api/preview.js && node --check api/upload.js && node --check lib/model.js && node --check scripts/dev-server.mjs"
+  }
+}

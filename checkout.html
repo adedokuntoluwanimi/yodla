@@ -1,1 +1,35 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout | Yodla</title><link rel="stylesheet" href="css/styles.css"></head><body><header class="site-header"><a class="brand" href="index.html"><img src="assets/logo.png" alt="Yodla"><span>Yodla</span></a></header><main class="shop-section"><div class="section-head"><p class="eyebrow">CHECKOUT</p><h2>Where should we bring it?</h2></div><label class="search-field"><span>Delivery area</span><select><option>Choose your location</option><option>Lagos</option><option>Abuja</option><option>Ibadan</option></select></label><label class="search-field"><span>Phone number</span><input type="tel" placeholder="0800 000 0000"></label><a class="button button--primary" href="help.html">Confirm delivery options</a></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Checkout — Yodla</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="checkout">
+  <header class="site-header" data-site-header></header>
+  <main class="checkout-page shell" data-checkout-view>
+    <section>
+      <div class="page-intro page-intro--compact"><span class="eyebrow">Final stretch</span><h1>Delivery details.</h1><p>This checkout is a prototype; no payment will be taken.</p></div>
+      <form class="checkout-form" data-checkout-form>
+        <fieldset><legend>Contact</legend><label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@email.com"></label><label>Phone<input type="tel" name="phone" required autocomplete="tel" inputmode="tel" placeholder="0800 000 0000"></label></fieldset>
+        <fieldset><legend>Delivery</legend><div class="field-pair"><label>First name<input name="firstName" required autocomplete="given-name"></label><label>Last name<input name="lastName" required autocomplete="family-name"></label></div><label>Address<input name="address" required autocomplete="street-address" placeholder="Street and house number"></label><div class="field-pair"><label>City<select name="city" required><option value="">Choose city</option><option>Lagos</option><option>Abuja</option><option>Ibadan</option><option>Port Harcourt</option></select></label><label>Delivery note<input name="note" placeholder="Gate, landmark, timing"></label></div></fieldset>
+        <div data-checkout-status aria-live="polite"></div>
+        <button class="button button--ember button--wide button--large" type="submit">Place prototype order <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+        <small>By continuing, you confirm the recipient is 18 or older.</small>
+      </form>
+    </section>
+    <details class="order-panel" data-order-panel>
+      <summary><span><small>Review</small> Order summary</span><b aria-hidden="true">+</b></summary>
+      <div data-checkout-summary></div>
+    </details>
+  </main>
+  <footer data-site-footer></footer>
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/ScrollTrigger.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

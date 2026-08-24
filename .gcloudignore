@@ -1,0 +1,12 @@
+.git
+.github
+.agents
+.codex
+admin
+api/admin
+data
+node_modules
+public
+test
+.env*
+npm-debug.log*

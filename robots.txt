@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://yodla-pi.vercel.app/sitemap.xml
+# Generative engines can read /llms.txt

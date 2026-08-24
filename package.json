@@ -2,8 +2,22 @@
   "name": "yodla-storefront",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "node server.mjs",
-    "start": "node server.mjs"
+    "dev": "node scripts/dev-server.mjs",
+    "start": "node scripts/public-server.mjs",
+    "assets": "node scripts/generate-assets.mjs",
+    "build": "npm run assets && node scripts/build-static.mjs",
+    "test": "node --test --test-concurrency=1",
+    "check": "node --check js/main.js && node --check js/hero-carousel.js && node --check js/content-store.js && node --check js/catalog.js && node --check js/cart-store.js && node --check js/blogs.js && node --check js/account-store.js && node --check js/concierge.js && node --check js/concierge-api.js && node --check lib/content-model.js && node --check lib/content-service.js && node --check lib/content-store.js && node --check lib/persist.js && node --check lib/seo-render.js && node --check api/content.js && node --check api/render.js && node --check api/legacy.js && node --check api/sitemap.js && node --check api/rss.js && node --check api/concierge.js && node --check api/llms.js && node --check scripts/dev-server.mjs && node --check scripts/public-server.mjs && node --check scripts/generate-assets.mjs && node --check scripts/build-static.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^2.18.0",
+    "@vercel/blob": "^2.3.3",
+    "gsap": "^3.13.0"
+  },
+  "devDependencies": {
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.3"
   }
 }

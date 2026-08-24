@@ -1,6 +1,45 @@
 {
-  "version": 2,
-  "name": "yodla",
-  "builds": [{ "src": "index.html", "use": "@vercel/static" }],
-  "routes": [{ "src": "/(.*)", "dest": "/$1" }]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "headers": [
+    {
+      "source": "/admin",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/admin/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    }
+  ],
+  "functions": {
+    "api/*.js": { "maxDuration": 30 },
+    "api/admin/*.js": { "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/admin/api/:path*", "destination": "/api/admin/:path*" },
+    { "source": "/llms.txt", "destination": "/api/llms" },
+    { "source": "/products/:slug", "destination": "/api/render?type=product&slug=:slug" },
+    { "source": "/journal/:slug", "destination": "/api/render?type=blog&slug=:slug" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/rss.xml", "destination": "/api/rss" },
+    { "source": "/product.html", "destination": "/api/legacy?type=product" },
+    { "source": "/product", "destination": "/api/legacy?type=product" },
+    { "source": "/blog.html", "destination": "/api/legacy?type=blog" },
+    { "source": "/blog", "destination": "/api/legacy?type=blog" }
+  ]
 }

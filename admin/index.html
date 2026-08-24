@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Yodla Shelf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body data-page="admin">
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <header class="site-header">
+    <div class="utility-bar">
+      <p data-connection>Opening the shelf</p>
+      <a href="/" target="_blank" rel="noreferrer">Open storefront</a>
+    </div>
+    <div class="site-header__main shell">
+      <button class="icon-button menu-button" type="button" data-open-shelf aria-controls="shelf-menu" aria-expanded="false" aria-label="Open shelf sections">
+        <span></span><span></span><span></span>
+      </button>
+      <a class="wordmark" href="#dashboard">YODLA<span>.</span></a>
+      <span class="admin-mark">Shelf</span>
+      <div></div>
+      <a class="button button--dark" href="/" target="_blank" rel="noreferrer">See the shop</a>
+    </div>
+    <nav class="category-rail shell" aria-label="Shelf sections">
+      <button type="button" data-view="dashboard" aria-current="page">Overview</button>
+      <button type="button" data-view="products">Bottles</button>
+      <button type="button" data-view="blogs">Journal</button>
+      <button type="button" data-view="homepage">Homepage</button>
+      <button type="button" data-view="taxonomy">Cities</button>
+      <button type="button" data-view="settings">Site</button>
+    </nav>
+  </header>
+  <div class="backdrop" data-shelf-backdrop hidden></div>
+  <aside id="shelf-menu" class="drawer drawer--small drawer--shelf" data-shelf-menu role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="shelf-menu-title">
+    <div class="drawer-head">
+      <div>
+        <span class="eyebrow">Shelf sections</span>
+        <h2 id="shelf-menu-title">Move around</h2>
+      </div>
+      <button class="close-button" type="button" data-close-shelf aria-label="Close shelf sections">
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <nav class="menu-nav" aria-label="Shelf sections">
+      <button type="button" data-view="dashboard"><span>01</span>Overview</button>
+      <button type="button" data-view="products"><span>02</span>Bottles</button>
+      <button type="button" data-view="blogs"><span>03</span>Journal</button>
+      <button type="button" data-view="homepage"><span>04</span>Homepage</button>
+      <button type="button" data-view="taxonomy"><span>05</span>Cities</button>
+      <button type="button" data-view="settings"><span>06</span>Site</button>
+    </nav>
+  </aside>
+  <main id="workspace" class="shell admin-main" tabindex="-1">
+    <header class="page-intro page-intro--compact">
+      <span class="eyebrow" data-kicker>Yodla operations</span>
+      <h1 data-title>Content shelf</h1>
+      <div class="workspace-actions" data-workspace-actions></div>
+    </header>
+    <div class="admin-status" data-status role="status" aria-live="polite"></div>
+    <section data-workspace aria-busy="true"><div class="loading-state"><span></span><p>Opening the content shelf…</p></div></section>
+  </main>
+  <dialog data-confirm-dialog aria-labelledby="confirm-title"><form method="dialog"><span class="eyebrow">Check the consequence</span><h2 id="confirm-title">Archive this item?</h2><p data-confirm-copy>It will leave the public shelf until you restore it.</p><div><button value="cancel" class="button button--quiet">Keep editing</button><button value="confirm" class="button button--danger">Archive item</button></div></form></dialog>
+  <script type="module" src="/admin/app.js"></script>
+</body>
+</html>
