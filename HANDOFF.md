@@ -6,6 +6,7 @@
 - URL: `https://yodla-fwy32oha6q-uc.a.run.app`.
 - Revision: `yodla-00005-big`, 100% traffic, Ready.
 - Cloud Build: `230bd9d5-057e-4141-a9bf-f59fb40f1f62` (`SUCCESS`).
+- Release source commit: `37b7d90` (`Ship Yodla Cloud Run storefront`), pushed to `origin/main` on 2026-08-24.
 - Runtime: 1 CPU, 512 MiB, concurrency 40, timeout 30 seconds, min 0/max 3.
 - Service account: `yodla-runtime@project-9afac.iam.gserviceaccount.com`; only `roles/aiplatform.user` was added.
 
