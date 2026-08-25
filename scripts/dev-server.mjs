@@ -90,12 +90,14 @@ createServer(async (request, response) => {
   }
   const requestPath = decodeURIComponent(parsedUrl.pathname);
   const safePath = normalize(requestPath).replace(/^([/\\])+/, "");
-  const candidate = resolve(join(root, safePath || "index.html"));
-  const file = candidate.startsWith(root) && existsSync(candidate) && statSync(candidate).isFile()
-    ? candidate
-    : requestPath === "/" || !extname(requestPath) ? join(root, "index.html") : null;
+  const brandIcons = new Set(["favicon.svg", "favicon.ico", "apple-touch-icon.png"]);
+  const brandFile = brandIcons.has(safePath) ? resolve(join(root, "assets", "brand", safePath)) : null;
+  const pageName = requestPath === "/" || !extname(requestPath) ? "index.html" : safePath.endsWith(".html") ? safePath : null;
+  const pageFile = pageName ? resolve(join(root, "pages", pageName)) : null;
+  const rootCandidate = resolve(join(root, safePath || "index.html"));
+  const file = [brandFile, pageFile, rootCandidate].find((candidate) => candidate && candidate.startsWith(root) && existsSync(candidate) && statSync(candidate).isFile()) || null;
 
-  if (!file || !existsSync(file)) {
+  if (!file) {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");
     return;

@@ -24,9 +24,12 @@ test("production server retains container healthz and a Cloud Run-safe health en
 });
 
 test("valid favicon assets and links are present on every built page", () => {
-  const ico = readFileSync("favicon.ico");
+  const ico = readFileSync("assets/brand/favicon.ico");
   assert.deepEqual([...ico.subarray(0, 4)], [0, 0, 1, 0]);
-  assert.ok(statSync("apple-touch-icon.png").size > 1_000);
+  assert.ok(statSync("assets/brand/apple-touch-icon.png").size > 1_000);
+  assert.ok(existsSync("public/favicon.ico"));
+  assert.ok(existsSync("public/favicon.svg"));
+  assert.ok(existsSync("public/apple-touch-icon.png"));
   for (const file of ["account", "bag", "blog", "checkout", "help", "index", "journal", "product", "shop"]) {
     const html = readFileSync(`public/${file}.html`, "utf8");
     assert.match(html, /href="\/favicon\.svg"/);

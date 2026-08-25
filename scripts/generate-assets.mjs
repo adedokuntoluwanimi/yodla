@@ -22,8 +22,10 @@ await Promise.all(heroImages.flatMap(([name, source]) => [480, 900].flatMap((wid
   ];
 })));
 
-const faviconSource = readFileSync("favicon.svg");
-await sharp(faviconSource).resize(180, 180).png().toFile("apple-touch-icon.png");
+const brandDirectory = join("assets", "brand");
+mkdirSync(brandDirectory, { recursive: true });
+const faviconSource = readFileSync(join(brandDirectory, "favicon.svg"));
+await sharp(faviconSource).resize(180, 180).png().toFile(join(brandDirectory, "apple-touch-icon.png"));
 const iconDirectory = mkdtempSync(join(tmpdir(), "yodla-favicon-"));
 try {
   const iconPngs = await Promise.all([16, 32, 48].map(async (size) => {
@@ -31,7 +33,7 @@ try {
     await sharp(faviconSource).resize(size, size).png().toFile(path);
     return path;
   }));
-  writeFileSync("favicon.ico", await pngToIco(iconPngs));
+  writeFileSync(join(brandDirectory, "favicon.ico"), await pngToIco(iconPngs));
 } finally {
   rmSync(iconDirectory, { recursive: true, force: true });
 }

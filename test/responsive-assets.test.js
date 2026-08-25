@@ -18,7 +18,7 @@ test("interface symbols use the shared accessible SVG sprite", () => {
   for (const id of ["arrow-up-right", "arrow-up", "chevron-left", "chevron-right", "check", "alert", "spark", "close", "bag", "search", "account", "location"]) {
     assert.match(sprite, new RegExp(`id="${id}"`));
   }
-  const interfaceSource = ["index.html", "product.html", "checkout.html", "blog.html", "js/main.js"]
+  const interfaceSource = ["pages/index.html", "pages/product.html", "pages/checkout.html", "pages/blog.html", "js/main.js"]
     .map((file) => readFileSync(file, "utf8")).join("\n");
   assert.doesNotMatch(interfaceSource, /[↗↑→←✓✦⌁×−↵]/u);
 });
