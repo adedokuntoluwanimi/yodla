@@ -18,7 +18,7 @@ export default async function handler(request, response) {
     const durable = result.persist?.durable ?? persistStatus().durable;
     const messages = {
       save: "Draft saved.",
-      publish: durable ? "Published. The storefront will use this shelf." : "Published on this instance only. Add BLOB_READ_WRITE_TOKEN so it survives on Vercel.",
+      publish: durable ? "Published. The storefront now uses this shelf." : "Published on this instance only. Durable storage is not configured.",
       unpublish: "Unpublished and kept as a draft.",
       archive: "Archived.",
     };

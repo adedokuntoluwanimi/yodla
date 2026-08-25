@@ -95,7 +95,7 @@ function renderHeroSlide(index, { announce = true } = {}) {
   const stamp = $(".hero-stamp", stage);
   const position = $("[data-hero-position]", stage);
   const live = $("[data-hero-live]", stage);
-  const version = "20260824-1";
+  const version = "20260824-2";
   if (media.responsiveBase) {
     avif?.removeAttribute("hidden");
     webp?.removeAttribute("hidden");

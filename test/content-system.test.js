@@ -5,7 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { prepare as prepareAdminDocument, validate as validateAdminDocument } from "../admin/lib/model.js";
 import { getPublishedContent } from "../lib/content-service.js";
-import { resetContentStore, saveDocument } from "../lib/content-store.js";
+import { listDocuments as listLiveDocuments, resetContentStore, saveDocument } from "../lib/content-store.js";
 import { getFallbackContent } from "../lib/fallback-content.js";
 import { normalizeBlog, normalizeProduct, validateDocument } from "../lib/content-model.js";
 import { renderContentPage, renderLlmsTxt } from "../lib/seo-render.js";
@@ -54,6 +54,22 @@ test("published snapshot is reused by the storefront content API", async () => {
   resetContentStore();
 });
 
+test("republishing an archived document restores it to the storefront", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "yodla-archive-"));
+  process.env.YODLA_SHELF_PATH = join(directory, "shelf.json");
+  resetContentStore();
+  const product = prepareAdminDocument({ _id: "restorable", _type: "product", id: "restorable", name: "Restorable", brand: "Yodla", category: "Wines", price: 12000, slug: "restorable", description: "A complete bottle.", image: "assets/products/bottle.jpg" });
+  await saveDocument(product, "publish");
+  await saveDocument(product, "archive");
+  assert.equal((await listLiveDocuments()).documents.find((item) => item._baseId === "restorable")._status, "archived");
+  await saveDocument({ ...product, archived: true }, "publish");
+  const content = await getPublishedContent();
+  assert.ok(content.products.some((item) => item.id === "restorable"));
+  await rm(directory, { recursive: true, force: true });
+  delete process.env.YODLA_SHELF_PATH;
+  resetContentStore();
+});
+
 test("products with array availability normalize stock and SEO fields", () => {
   const product = normalizeProduct({
     _id: "test-bottle", _type: "product", name: "Test Bottle", brand: "Yodla", category: "Spirits", price: 12000,
@@ -93,7 +109,7 @@ test("admin preparation removes UI metadata and preserves publishable fields", (
 test("server-rendered product pages contain canonical, SEO and GEO data", () => {
   const product = normalizeProduct({ id: "structured-bottle", name: "Structured Bottle", brand: "Yodla", category: "Wines", slug: "structured-bottle", price: 22000, description: "A bottle with complete metadata.", image: "assets/products/bottle.jpg", availability: { Lagos: "in-stock" }, seo: { title: "Structured Bottle in Nigeria", description: "Buy Structured Bottle from Yodla.", faqs: [{ question: "How should it be served?", answer: "Serve chilled." }] }, geo: { title: "Structured Bottle GEO", description: "A citation-ready Nigerian wine." } });
   const html = renderContentPage(product, "product");
-  assert.match(html, /<link rel="canonical" href="https:\/\/yodla-pi\.vercel\.app\/products\/structured-bottle">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/yodla-fwy32oha6q-uc\.a\.run\.app\/products\/structured-bottle">/);
   assert.match(html, /"@type":"Product"/);
   assert.match(html, /"@type":"FAQPage"/);
   assert.match(html, /Structured Bottle GEO/);

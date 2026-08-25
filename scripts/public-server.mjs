@@ -8,6 +8,11 @@ import llms from "../api/llms.js";
 import render from "../api/render.js";
 import rss from "../api/rss.js";
 import sitemap from "../api/sitemap.js";
+import uploads from "../api/uploads.js";
+import adminContent from "../admin/api/content.js";
+import adminDocument from "../admin/api/document.js";
+import adminPreview from "../admin/api/preview.js";
+import adminUpload from "../admin/api/upload.js";
 import { getPublishedBlog, getPublishedProduct } from "../lib/content-service.js";
 import { publicSiteUrl, renderContentPage, renderNotFound } from "../lib/seo-render.js";
 
@@ -29,11 +34,12 @@ function send(response, status, body, contentType = "text/plain; charset=utf-8",
 
 function isInsideRoot(path) {
   const child = relative(root, path);
-  return child && child !== ".." && !child.startsWith(`..${sep}`) && !resolve(path).includes(`${sep}admin${sep}`);
+  return child && child !== ".." && !child.startsWith(`..${sep}`);
 }
 
 function staticFile(pathname) {
-  const requested = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const clean = pathname.replace(/^\/+/, "");
+  const requested = pathname === "/" ? "index.html" : pathname.endsWith("/") ? `${clean}index.html` : clean;
   const candidates = [resolve(root, requested)];
   if (!extname(requested)) candidates.push(resolve(root, `${requested}.html`));
   return candidates.find((candidate) => isInsideRoot(candidate) && existsSync(candidate) && statSync(candidate).isFile());
@@ -43,6 +49,10 @@ const apiHandlers = new Map([
   ["/api/content", content], ["/api/concierge", concierge], ["/api/render", render],
   ["/api/sitemap", sitemap], ["/api/rss", rss], ["/api/llms", llms],
   ["/sitemap.xml", sitemap], ["/rss.xml", rss], ["/llms.txt", llms],
+  ["/admin/api/content", adminContent], ["/admin/api/document", adminDocument],
+  ["/admin/api/preview", adminPreview], ["/admin/api/upload", adminUpload],
+  ["/api/admin/content", adminContent], ["/api/admin/document", adminDocument],
+  ["/api/admin/preview", adminPreview], ["/api/admin/upload", adminUpload],
 ]);
 
 createServer(async (request, response) => {
@@ -51,10 +61,10 @@ createServer(async (request, response) => {
     const pathname = decodeURIComponent(url.pathname);
 
     if (pathname === "/health" || pathname === "/healthz") return send(response, 200, JSON.stringify({ ok: true }), "application/json; charset=utf-8");
-    if (pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/")) return send(response, 404, "Not found");
+    if (pathname === "/admin") return send(response, 308, "", "text/plain; charset=utf-8", { Location: "/admin/", "X-Robots-Tag": "noindex, nofollow" });
 
     if (pathname === "/robots.txt") {
-      const body = `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${publicSiteUrl()}/sitemap.xml\n`;
+      const body = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin/\nSitemap: ${publicSiteUrl()}/sitemap.xml\n`;
       return send(response, 200, body, "text/plain; charset=utf-8");
     }
 
@@ -72,6 +82,9 @@ createServer(async (request, response) => {
     const apiHandler = apiHandlers.get(pathname);
     if (apiHandler) return apiHandler(request, response);
 
+    const uploadMatch = pathname.match(/^\/api\/uploads\/([^/]+)$/);
+    if (uploadMatch) return uploads(request, response, uploadMatch[1]);
+
     const contentMatch = pathname.match(/^\/(products|journal)\/([^/]+)\/?$/);
     if ((request.method === "GET" || request.method === "HEAD") && contentMatch) {
       const type = contentMatch[1] === "journal" ? "blog" : "product";
@@ -84,8 +97,11 @@ createServer(async (request, response) => {
     if (!file) return send(response, 404, "Not found");
     const contentType = types[extname(file).toLowerCase()] || "application/octet-stream";
     const immutable = url.searchParams.has("v") && /\.(?:avif|css|ico|js|png|svg|webp)$/i.test(file);
-    const cacheControl = immutable ? "public, max-age=31536000, immutable" : contentType.startsWith("text/html") ? "no-store" : "public, max-age=86400";
-    response.writeHead(200, { "Content-Type": contentType, "Cache-Control": cacheControl, "X-Content-Type-Options": "nosniff" });
+    const adminAsset = pathname.startsWith("/admin/");
+    const cacheControl = adminAsset || contentType.startsWith("text/html") ? "no-store" : immutable ? "public, max-age=31536000, immutable" : "public, max-age=86400";
+    const headers = { "Content-Type": contentType, "Cache-Control": cacheControl, "X-Content-Type-Options": "nosniff" };
+    if (adminAsset) headers["X-Robots-Tag"] = "noindex, nofollow";
+    response.writeHead(200, headers);
     if (request.method === "HEAD") return response.end();
     createReadStream(file).pipe(response);
   } catch (error) {
@@ -93,4 +109,4 @@ createServer(async (request, response) => {
     if (!response.headersSent) return send(response, 500, "Something went wrong");
     response.end();
   }
-}).listen(port, "0.0.0.0", () => console.log(`Yodla public storefront listening on ${port}`));
+}).listen(port, "0.0.0.0", () => console.log(`Yodla storefront and admin listening on ${port}`));

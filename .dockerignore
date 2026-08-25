@@ -2,8 +2,6 @@
 .github
 .agents
 .codex
-admin
-api/admin
 data
 node_modules
 public

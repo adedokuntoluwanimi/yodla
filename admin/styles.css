@@ -1,5 +1,7 @@
 .admin-mark{font:500 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ember)}
 .admin-main{padding-bottom:140px}
+.admin-exposure{display:flex;justify-content:center;gap:10px;padding:10px 20px;background:#fff0cc;color:#5b3b00;border-bottom:1px solid #d9b45e;font-size:13px;text-align:center}
+.admin-exposure strong{font-weight:700}
 .admin-main .page-intro{display:grid;grid-template-columns:1fr auto;align-items:end;gap:24px}
 .admin-main .page-intro h1{grid-column:1}
 .workspace-actions{grid-column:2;grid-row:1 / span 2;align-self:end}
@@ -16,6 +18,12 @@
 .pulse-panel{margin-top:10px;background:var(--night);color:#fff;padding:clamp(28px,4vw,48px);display:grid;grid-template-columns:1fr auto;align-items:center;gap:30px}
 .pulse-panel h2{font:650 34px/.95 var(--display);letter-spacing:-.05em;margin:0 0 8px}
 .pulse-panel p{color:#d5c4ca;margin:0}
+.hero-slide-list{display:grid;gap:18px}
+.hero-slide-editor{display:grid;grid-template-columns:minmax(180px,.55fr) minmax(0,1.45fr);gap:20px;padding:18px;background:#eee6d8;border:1px solid var(--line)}
+.hero-slide-editor__head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.hero-slide-editor__media{min-height:250px;background:var(--night);display:grid;place-items:center;overflow:hidden}
+.hero-slide-editor__media img{width:100%;height:100%;object-fit:contain;max-height:340px}
+.hero-slide-editor__media span{color:#cfc1c6}
 .content-toolbar{display:flex;justify-content:space-between;gap:16px;margin:8px 0 22px}
 .content-toolbar input,.content-toolbar select{height:50px;border:1px solid var(--line);background:#fff;padding:0 13px}
 .content-toolbar input{min-width:min(360px,55vw)}
@@ -25,6 +33,7 @@
 .status-chip{display:inline-flex;padding:5px 8px;font:500 8px var(--mono);text-transform:uppercase;background:#e8e1d5}
 .status-chip--published{background:#d9eadf;color:#155d3c}
 .status-chip--modified{background:#f2e4c8;color:#76530f}
+.status-chip--archived{background:#ead9dc;color:var(--red)}
 .editor-head{display:flex;justify-content:space-between;align-items:start;gap:22px;margin-bottom:24px}
 .editor-head h2{font:650 clamp(40px,6vw,72px)/.9 var(--display);letter-spacing:-.06em;margin:0}
 .editor-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px;align-items:start}
@@ -79,9 +88,11 @@ dialog form{padding:32px}
 dialog h2{font-size:34px;margin:0 0 12px}
 dialog form>div{display:flex;justify-content:flex-end;gap:8px;margin-top:26px}
 @media(max-width:850px){
+  .admin-exposure{display:grid;gap:2px}
   .admin-main .page-intro{display:block}
   .workspace-actions{margin-top:18px}
   .metric-grid,.editor-grid,.form-grid,.availability-grid{grid-template-columns:1fr}
+  .hero-slide-editor{grid-template-columns:1fr}
   .editor-media{position:relative;top:auto;min-height:420px}
   body[data-page=admin] .menu-button{display:grid}
   body[data-page=admin] .category-rail{display:none!important}

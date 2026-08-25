@@ -2,10 +2,12 @@ import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } f
 import { join } from "node:path";
 
 const output = "public";
-const assetVersion = "20260824-1";
+const assetVersion = "20260824-2";
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 for (const directory of ["assets", "css", "js"]) cpSync(directory, join(output, directory), { recursive: true, force: true });
+mkdirSync(join(output, "admin"), { recursive: true });
+for (const file of ["index.html", "app.js", "styles.css"]) cpSync(join("admin", file), join(output, "admin", file), { force: true });
 for (const file of readdirSync(".").filter((name) => name.endsWith(".html") || ["favicon.svg", "favicon.ico", "apple-touch-icon.png", "robots.txt"].includes(name))) {
   cpSync(file, join(output, file), { force: true });
   if (file.endsWith(".html")) {

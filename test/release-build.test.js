@@ -2,16 +2,25 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 
-test("production build contains only public storefront files", () => {
-  assert.equal(existsSync("public/admin"), false);
+test("production build contains the storefront and public no-auth admin", () => {
+  assert.ok(existsSync("public/admin/index.html"));
+  assert.ok(existsSync("public/admin/app.js"));
+  assert.ok(existsSync("public/admin/styles.css"));
   assert.equal(existsSync("public/api/admin"), false);
   assert.ok(existsSync("public/checkout.html"));
   assert.match(readFileSync("public/checkout.html", "utf8"), /no payment will be taken/i);
+  assert.match(readFileSync("public/admin/index.html", "utf8"), /Public admin — no sign-in is enabled/);
+  const adminApp = readFileSync("public/admin/app.js", "utf8");
+  assert.match(adminApp, /heroSlides/);
+  assert.match(adminApp, /data-image-kind="heroSlide:/);
+  assert.match(adminApp, /responsiveBase\.value = ""/);
 });
 
 test("production server retains container healthz and a Cloud Run-safe health endpoint", () => {
   const server = readFileSync("scripts/public-server.mjs", "utf8");
   assert.match(server, /pathname === "\/health" \|\| pathname === "\/healthz"/);
+  assert.match(server, /"\/admin\/api\/document", adminDocument/);
+  assert.match(server, /import uploads from "\.\.\/api\/uploads\.js"/);
 });
 
 test("valid favicon assets and links are present on every built page", () => {
@@ -24,6 +33,10 @@ test("valid favicon assets and links are present on every built page", () => {
     assert.match(html, /href="\/favicon\.ico"/);
     assert.match(html, /href="\/apple-touch-icon\.png"/);
   }
+  const admin = readFileSync("public/admin/index.html", "utf8");
+  assert.match(admin, /href="\/favicon\.svg"/);
+  assert.match(admin, /href="\/favicon\.ico"/);
+  assert.match(admin, /href="\/apple-touch-icon\.png"/);
 });
 
 test("four responsive hero image sets and non-autoplay controls ship", () => {
