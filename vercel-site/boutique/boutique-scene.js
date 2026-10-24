@@ -3,7 +3,7 @@ import { parcelComplete } from './boutique-order.js';
 import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
 import { moveWithCollision, routeToStation, canStand, STATIONS } from './boutique-model.js';
 
-export function createBoutique({ container, products, onSelect, onStation, onPosition, onHover, onMove, onTravel, reduceMotion = false }) {
+export function createBoutique({ container, products, onSelect, onStation, onPosition, onHover, onMove, onTravel, onDoorBell, reduceMotion = false }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#30251d');
   scene.fog = new THREE.FogExp2('#30251f', .012);
@@ -82,14 +82,14 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, n), material);
     mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); return mesh;
   }
-  function textPanel(text, sub, width, height, { background = '#4c202c', color = '#dfc7a0', fontSize = 54 } = {}) {
+  function textPanel(text, sub, width, height, { background = '#4c202c', color = '#dfc7a0', fontSize = 54, bold = false } = {}) {
     const texture = mapCanvas(1024, 256, (ctx, w, h) => {
       ctx.fillStyle = background; ctx.fillRect(0, 0, w, h);
       ctx.textAlign = 'center'; ctx.fillStyle = color;
-      ctx.font = `${fontSize}px Georgia`; ctx.fillText(text, w / 2, sub ? 126 : 148);
+      ctx.font = `${bold?'bold ':''}${fontSize}px Georgia`; ctx.fillText(text, w / 2, sub ? 126 : 148,960);
       if (sub) { ctx.font = '19px Arial'; ctx.letterSpacing = '5px'; ctx.fillText(sub, w / 2, 190); }
     });
-    return new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture }));
+    return new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture, toneMapped:false }));
   }
   function sign(text, sub, x, y, z, width = 3.2, rotation = 0) {
     const group = new THREE.Group(); group.position.set(x, y, z); group.rotation.y = rotation; scene.add(group);
@@ -123,6 +123,42 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     box(12.9, .02, .035, glow, 0, 4.24, z);
   }
   for (const x of [-4, 0, 4]) box(.18, .22, 20, walnut, x, 4.32, 0);
+
+  // Street-facing wall and glazed entrance beside the checkout counter.
+  const entrance=new THREE.Group();entrance.name='glass-entrance';scene.add(entrance);
+  for(const side of [-1,1]){
+    box(5.9,.72,.2,plaster,side*4.05,.36,9.25,entrance);
+    box(5.9,1.1,.2,plaster,side*4.05,3.95,9.25,entrance);
+    for(const x of [side*1.3,side*6.65])box(.44,3.45,.24,walnut,x,1.725,9.22,entrance);
+  }
+  box(2.2,1.08,.2,walnut,0,3.96,9.25,entrance);
+  const windowGlass=new THREE.MeshPhysicalMaterial({color:'#c7dedb',roughness:.08,metalness:.05,transparent:true,opacity:.18,clearcoat:1,side:THREE.DoubleSide,depthWrite:false});
+  for(const side of [-1,1]){
+    const windowPane=box(4.9,2.65,.025,windowGlass,side*4,2.05,9.23,entrance);windowPane.castShadow=false;
+    for(const y of [.73,3.39])box(5.1,.07,.12,brass,side*4,y,9.18,entrance);
+    box(.05,2.6,.09,brass,side*4,2.05,9.17,entrance);
+  }
+  const streetMap=mapCanvas(512,512,(ctx,w,h)=>{
+    const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#b5c5cb');sky.addColorStop(.62,'#ece3cf');sky.addColorStop(1,'#7b7d71');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+    for(let i=0;i<7;i++){ctx.fillStyle=i%2?'#a69c8b':'#beb3a0';ctx.fillRect(i*90-30,180+(i%3)*35,75,260);ctx.fillStyle='#6c786f';for(let y=220;y<400;y+=55)ctx.fillRect(i*90-15,y,35,28);}
+    ctx.fillStyle='#79796c';ctx.fillRect(0,440,w,72);
+  });
+  const street=new THREE.Mesh(new THREE.PlaneGeometry(18,6),new THREE.MeshBasicMaterial({map:streetMap,side:THREE.DoubleSide,toneMapped:false}));street.position.set(0,2.3,12.5);scene.add(street);
+  const doorHinge=new THREE.Group();doorHinge.position.set(-1.04,0,9.23);entrance.add(doorHinge);doorHinge.name='entrance-door-hinge';
+  const doorGlass=box(1.94,3.08,.035,windowGlass,1.04,1.58,0,doorHinge);doorGlass.castShadow=false;
+  for(const x of [.05,2.02])box(.065,3.25,.12,brass,x,1.625,0,doorHinge);
+  for(const y of [.05,3.23])box(2.04,.07,.12,brass,1.04,y,0,doorHinge);
+  for(const side of [-1,1]){
+    cylinder(.018,.018,.43,brass,1.78,1.38,side*.09,doorHinge,20);
+    for(const y of [1.2,1.56])box(.025,.025,.17,brass,1.78,y,0,doorHinge);
+  }
+  const pushSign=textPanel('PUSH','THANK YOU FOR VISITING',.45,.16,{background:'#321823',color:'#fff5df',fontSize:130,bold:true});pushSign.position.set(1.1,1.7,-.025);pushSign.rotation.y=Math.PI;doorHinge.add(pushSign);
+  doorHinge.traverse(o=>{if(o.isMesh){o.userData.exitDoor=true;interactives.push(o);}});
+  const bellPivot=new THREE.Group();bellPivot.position.set(.2,3.3,-.05);doorHinge.add(bellPivot);
+  const bellShade=new THREE.Mesh(new THREE.ConeGeometry(.065,.11,24,1,true),brass);bellShade.rotation.x=Math.PI;bellPivot.add(bellShade);
+  cylinder(.015,.015,.14,brass,0,-.025,0,bellPivot,12);const bellClapper=new THREE.Mesh(new THREE.SphereGeometry(.019,12,8),brass);bellClapper.position.y=-.09;bellPivot.add(bellClapper);
+  let doorTime=0,doorHold=false;
+  function openEntrance(hold=false){doorTime=3.8;doorHold=hold;onDoorBell?.();renderer.shadowMap.needsUpdate=true;}
 
   // Recessed arch behind the cellar mark.
   box(4.4, 3.3, .12, wine, -2.7, 1.7, -9.8);
@@ -292,7 +328,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       if(mode==='gift'){const earring=new THREE.Mesh(new THREE.TorusGeometry(.022,.004,8,20),brass);earring.position.set(side*.141,1.69,.005);host.add(earring);}
     }
     for(let i=0;i<16;i++){const lock=sphere(.018,.06,.022,hair,Math.cos(i*.5)*.112,1.862+Math.sin(i)*.012,-.016+Math.sin(i*.5)*.09);lock.rotation.z=Math.cos(i)*.3;}
-    const tag=textPanel(name,'YODLA',.19,.075,{background:'#e7d9bc',color:'#3b1e27',fontSize:73});tag.position.set(.035,1.35,.184);host.add(tag);
+    const tag=textPanel(name,'YODLA',.28,.1,{background:'#fff8e9',color:'#29151b',fontSize:140,bold:true});tag.name='cashier-badge-'+mode;tag.position.set(.035,1.47,.184);host.add(tag);
     const arms=[];
     for(const side of [-1,1]){
       const shoulder=new THREE.Group();shoulder.position.set(side*.25,1.4,0);host.add(shoulder);
@@ -303,7 +339,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       arms.push({shoulder,elbow,side});
     }
     for(const side of [-1,1])cylinder(.085,.07,.7,black,side*.11,.4,0,host,16);
-    const detail=textPanel('Ready for you','',.4,.15,{background:'#f2e6cf',color:'#4d2b27',fontSize:40});detail.position.set(x,1.38,z+(rotation?-.65:.65));detail.rotation.y=rotation;scene.add(detail);
+
     const workingArms=[];
     for(const side of [-1,1]){
       const upper=cylinder(.06,.047,1,shirt,0,0,0,host,24);
@@ -319,7 +355,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     for(let i=0;i<4;i++)sphere(.008,.008,.004,brass,0,1.45-i*.07,.17);
     box(.2,.105,.013,apron,.02,1.02,.183,host);
     for(const side of [-1,1])sphere(.075,.09,.12,shirt,side*.22,1.39,0);
-    cashierRig[mode]={host,home:host.position.clone(),arms,workingArms,detail,action:0,phase:0};
+    cashierRig[mode]={host,home:host.position.clone(),arms,workingArms,action:0,phase:0};
   }
   addCashier('gift','Nneka',3.4,-8.9);
   addCashier('checkout','Daniel',-4,5.7,Math.PI);
@@ -328,9 +364,9 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const logo=new THREE.Mesh(new THREE.PlaneGeometry(.85,.19),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,depthWrite:false}));logo.position.set(x,.58,z);logo.rotation.y=rotation;scene.add(logo);
   }
 
-  for(const [x,y,z,rotation] of [[-2.7,3.15,-9.64,0],[-6.86,3.85,5.9,Math.PI/2],[6.86,3.85,5.9,-Math.PI/2],[3.6,3.45,-9.64,0]]){
-    const logo=new THREE.Mesh(new THREE.PlaneGeometry(2,.45),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,depthWrite:false}));logo.position.set(x,y,z);logo.rotation.y=rotation;scene.add(logo);
-  }
+  // Use the original cup emblem beside the retained cellar wordmark.
+  const cupTexture=new THREE.TextureLoader().load('/assets/brand/yodla-cup.svg');cupTexture.colorSpace=THREE.SRGBColorSpace;textures.push(cupTexture);
+  const cup=new THREE.Mesh(new THREE.PlaneGeometry(.76,.76),new THREE.MeshBasicMaterial({map:cupTexture,toneMapped:false}));cup.position.set(-4.35,2.3,-9.61);cup.name='yodla-cup-emblem';scene.add(cup);
   // The shopper carries a woven basket. Every animation unit is copied from the order ledger.
   function makeBasket(parent){
     const g=new THREE.Group();parent.add(g);
@@ -345,6 +381,13 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   scene.add(camera);
   const carried=new THREE.Group();camera.add(carried);carried.position.set(.4,-.63,-1.05);carried.scale.setScalar(.7);
   const shoppingBasket=makeBasket(carried),shoppingDrinks=new THREE.Group();carried.add(shoppingDrinks);carried.visible=false;
+  const customerHands=new THREE.Group();customerHands.name='customer-hands';camera.add(customerHands);customerHands.visible=false;
+  const customerSkin=mat('#936b50',.73);
+  for(const side of [-1,1]){
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),customerSkin);hand.scale.set(.055,.037,.085);hand.position.set(side*.25,-.39,-1.05);customerHands.add(hand);
+    const arm=cylinder(.046,.06,.38,customerSkin,side*.29,-.53,-.94,customerHands,20);arm.rotation.x=-.5;arm.rotation.z=side*.16;
+    for(let i=0;i<4;i++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.009,.055,5,12),customerSkin);finger.rotation.x=.9;finger.position.set(side*(.22+i*.018),-.37,-1.12);customerHands.add(finger);}
+  }
   const orderRoot=new THREE.Group();scene.add(orderRoot);orderRoot.visible=false;
   let orderDrinksGroup=null,renderedPacked=-1;
   let orderData=null,orderBottleMeshes=[],orderParcels=[],counterBasket=null,pos=null,receipt=null,currentOrderFrame=null;
@@ -367,15 +410,15 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   function parcelTag(person,message){
     const texture=mapCanvas(1024,768,(ctx,w,h)=>{
       ctx.fillStyle='#f2e8d3';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#a38457';ctx.lineWidth=4;ctx.strokeRect(22,22,w-44,h-44);
-      ctx.fillStyle='#532735';ctx.textAlign='center';ctx.font='52px Georgia';ctx.fillText('yodla',w/2,100);
+      ctx.fillStyle='#29151b';ctx.textAlign='center';ctx.font='bold 58px Georgia';ctx.fillText('yodla',w/2,100);
       ctx.font='26px Arial';ctx.fillText('A GIFT FOR',w/2,175);
       const wrap=(value,max)=>{const words=String(value||'').split(/\s+/),lines=[''];for(const word of words){let i=lines.length-1;if((lines[i]+' '+word).length>max)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}return lines;};
-      ctx.font='52px Georgia';wrap(person.name||person.firstName||'You',26).slice(0,3).forEach((line,i)=>ctx.fillText(line,w/2,255+i*61,930));
-      ctx.font='italic 32px Georgia';wrap(message||'A little something for you.',44).slice(0,5).forEach((line,i)=>ctx.fillText(line,w/2,470+i*43,920));
+      ctx.font='bold 84px Georgia';wrap(person.name||person.firstName||'You',22).slice(0,3).forEach((line,i)=>ctx.fillText(line,w/2,270+i*83,930));
+      ctx.font='italic 38px Georgia';wrap(message||'A little something for you.',44).slice(0,5).forEach((line,i)=>ctx.fillText(line,w/2,470+i*43,920));
       ctx.font='20px Arial';ctx.fillText('PREPARED WITH CARE BY NNEKA',w/2,725);
     });
-    const material=new THREE.MeshStandardMaterial({map:texture,roughness:.86,side:THREE.DoubleSide});orderAssets.push(material);
-    return new THREE.Mesh(new THREE.PlaneGeometry(.47,.35),material);
+    const material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});orderAssets.push(material);
+    return new THREE.Mesh(new THREE.PlaneGeometry(.58,.43),material);
   }
   function beginOrder(order){
     endOrder();orderData=order;orderRoot.visible=true;carried.visible=false;giftBox.visible=false;
@@ -390,13 +433,13 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       for(const side of [-1,1])box(.018,h,d,order.mode==='gift'?cream:paper,side*w/2,h/2,0,g);
       box(w,h*.65,.018,order.mode==='gift'?cream:paper,0,h*.325,d/2,g);
       const top=box(w+.025,.035,d+.025,wine,0,h+.02,0,g);top.visible=false;
-      const tag=parcelTag(parcel.person,parcel.message);tag.position.set(0,h*.56,d/2+.022);g.add(tag);tag.visible=false;
+      const tag=parcelTag(parcel.person,parcel.message);tag.position.set(0,h*.65,d/2+.028);tag.name='gift-tag-'+i;g.add(tag);tag.visible=false;
       const tie=new THREE.Mesh(new THREE.TorusGeometry(.055,.007,8,24),brass);tie.position.set(.17,h+.07,0);tie.rotation.x=Math.PI/2;g.add(tie);tie.visible=false;
       if(order.mode==='checkout'){
         for(const side of [-1,1]){const handle=new THREE.Mesh(new THREE.TorusGeometry(.12,.012,8,24,Math.PI),darkWood);handle.position.set(0,h,side*d/2);g.add(handle);}
         const mark=textPanel('yodla','',.3,.13,{background:'#eee0c7',color:'#4c202c',fontSize:85});mark.position.set(0,.2,d/2+.012);g.add(mark);
       }
-      return {group:g,top,tag,tie};
+      g.name="parcel-"+i;return {group:g,home:g.position.clone(),top,tag,tie};
     });
     pos=new THREE.Group();pos.position.set(0,1.18,.81);orderRoot.add(pos);pos.visible=false;
     box(.22,.055,.34,black,0,0,0,pos);const display=textPanel('PAY','DEMO',.18,.15,{background:'#b2c3ad',color:'#17251c',fontSize:76});display.rotation.x=-Math.PI/2+.38;display.position.set(0,.058,-.02);pos.add(display);
@@ -406,7 +449,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       ctx.fillStyle='#f7f2e7';ctx.fillRect(0,0,w,h);ctx.fillStyle='#332520';ctx.textAlign='center';ctx.font='54px Georgia';ctx.fillText('yodla',w/2,85);ctx.font='24px monospace';ctx.fillText('SAMPLE RECEIPT',w/2,145);ctx.font='17px monospace';ctx.fillText('SIMULATED PAYMENT / NO ORDER',w/2,185);let y=240;ctx.textAlign='left';
       for(const parcel of order.parcels){if(order.mode==='gift'){ctx.fillText('For '+parcel.person.name,24,y,460);y+=35;}for(const line of parcel.lines){ctx.fillText(line.name+' x '+line.quantity,24,y,460);y+=35;}if(y>800)break;}
       ctx.fillText('TOTAL NGN '+order.total.toLocaleString('en-NG'),24,900);ctx.fillText('THANK YOU',24,965);
-    });const receiptMaterial=new THREE.MeshStandardMaterial({map:receiptMap,roughness:.95});orderAssets.push(receiptMaterial);
+    });const receiptMaterial=new THREE.MeshBasicMaterial({map:receiptMap,toneMapped:false});orderAssets.push(receiptMaterial);
     const receiptLabel=new THREE.Mesh(new THREE.PlaneGeometry(.29,.58),receiptMaterial);receiptLabel.rotation.x=-Math.PI/2;receipt.add(receiptLabel);
     renderer.shadowMap.needsUpdate=true;
   }
@@ -420,7 +463,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     arm.fingers.forEach((f,i)=>{f.visible=true;f.position.copy(wrist).add(new THREE.Vector3((i-1.5)*.016,-.045,.012));f.rotation.x=-.65;});
   }
   function updateOrder(state){
-    if(!orderData)return;currentOrderFrame=state;
+    if(!orderData)return;currentOrderFrame=state;customerHands.visible=state.stage==='complete'||state.stage==='handover'&&state.handoverProgress>.72;
     counterBasket.position.z=.65+(1-state.basketProgress)*.65;
     const activeIndex=state.packed;
     if(renderedPacked!==activeIndex){
@@ -445,21 +488,33 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     });
     orderParcels.forEach((parcel,i)=>{
       const complete=parcelComplete(orderData,state,i);
+      parcel.group.position.copy(parcel.home);
+      if(state.stage==='handover'||state.stage==='complete'){
+        const received=state.stage==='complete'||i<state.handoverIndex;
+        const active=state.stage==='handover'&&i===state.handoverIndex;
+        if(received||active){
+          const t=received?1:state.handoverProgress,ease=t*t*(3-2*t);
+          const latest=state.stage==='complete'?orderParcels.length-1:state.handoverIndex;const target=orderRoot.worldToLocal(camera.localToWorld(new THREE.Vector3(i===latest?0:.36,i===latest?-.28:-.77-(i%2)*.12,i===latest?-1.12:-1.02)));
+          parcel.group.position.lerp(target,ease);parcel.group.position.y+=Math.sin(t*Math.PI)*.24;
+          parcel.group.scale.setScalar(1-ease*.22);
+        }
+      }
       parcel.top.visible=orderData.mode==='gift'&&complete;parcel.tag.visible=orderData.mode==='gift'&&complete;parcel.tie.visible=orderData.mode==='gift'&&complete&&orderData.wrap;
     });
     pos.visible=state.stage==='payment'||state.stage==='receipt';receipt.visible=state.paid;
     if(state.paid)receipt.scale.z=Math.min(1,receipt.scale.z+.035);else receipt.scale.z=.01;
     const rig=cashierRig[orderData.mode];rig.arms.forEach(a=>a.shoulder.visible=false);
     const current=orderBottleMeshes[0];
+    const handover=state.stage==='handover'&&state.handoverProgress<.65?orderParcels[state.handoverIndex]:null;
     const reachX=current&&state.stage==='packing'?THREE.MathUtils.clamp(current.position.x,-.45,.65)*.7:0;rig.host.position.x=rig.home.x+reachX*(orderData.mode==='checkout'?-1:1);
     rig.workingArms.forEach(arm=>{
-      const p=current&&state.stage==='packing'?current.position.clone().add(new THREE.Vector3(arm.side*.06,.22,0)):new THREE.Vector3(arm.side*.27,1.2,.48);
+      const p=handover?handover.group.position.clone().add(new THREE.Vector3(arm.side*.2,.26,0)):current&&state.stage==='packing'?current.position.clone().add(new THREE.Vector3(arm.side*.06,.22,0)):new THREE.Vector3(arm.side*.27,1.2,.48);
       positionArm(rig,arm,orderRoot.localToWorld(p));
     });
     const shadowKey=state.stage+':'+state.packed;if(shadowKey!==lastOrderShadow){renderer.shadowMap.needsUpdate=true;lastOrderShadow=shadowKey;}
   }
   function endOrder(){
-    orderData=null;currentOrderFrame=null;orderRoot.visible=false;giftBox.visible=true;clearGroup(orderRoot);orderBottleMeshes=[];orderParcels=[];
+    orderData=null;currentOrderFrame=null;customerHands.visible=false;orderRoot.visible=false;giftBox.visible=true;clearGroup(orderRoot);orderBottleMeshes=[];orderParcels=[];
     for(let i=interactives.length-1;i>=0;i--)if(interactives[i].userData.orderPOS)interactives.splice(i,1);
     orderAssets.splice(0).forEach(m=>{if(m.map){const index=textures.indexOf(m.map);if(index>=0)textures.splice(index,1);m.map.dispose();}m.dispose();});
     for(const rig of Object.values(cashierRig)){rig.host.position.copy(rig.home);rig.arms.forEach(a=>a.shoulder.visible=true);rig.workingArms.forEach(a=>{a.upper.visible=a.fore.visible=a.hand.visible=false;a.fingers.forEach(f=>f.visible=false);});}
@@ -530,6 +585,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     drag = null;
     if (moved) return;
     const hit = cast(e);
+    if(hit?.object.userData.exitDoor){container.dispatchEvent(new CustomEvent('boutique-exit'));return;}
     if (hit?.object.userData.productId) onSelect?.(hit.object.userData.productId);
     else if (hit?.object.userData.station) visit(hit.object.userData.station);
     else { const floor = floorTarget(e); if (floor) moveTo(floor); }
@@ -586,6 +642,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     frame = requestAnimationFrame(tick);
     const dt = Math.min((now - last) / 1000, .04); last = now;
     if (document.hidden) return;
+    doorTime=Math.max(0,doorTime-dt);const angle=doorHold||doorTime>1?-1.15:0;doorHinge.rotation.y=THREE.MathUtils.damp(doorHinge.rotation.y,angle,5,dt);bellPivot.rotation.z=doorTime>0&&!reduced?Math.sin(doorTime*18)*Math.min(.35,doorTime*.12):0;
     if (!paused) {
       if(travel){
         travel.elapsed=Math.min(travel.duration,travel.elapsed+dt);
@@ -617,20 +674,9 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   frame = requestAnimationFrame(tick);
   return {
     visit, pause, setShoppingBasket, beginOrder, updateOrder, endOrder,
-    setCounterAction(mode,progress,details={}){
-      const rig=cashierRig[mode];if(!rig)return;rig.phase=progress;rig.wrap=details.wrap;renderer.shadowMap.needsUpdate=true;
-      if(progress>=.75){
-        const name=details.person?.name || details.person?.firstName || (mode==='gift'?'Your gift':'Your selection');
-        const previous=rig.detail.material.map;
-        const next=textPanel(name,'PREPARED BY '+(mode==='gift'?'NNEKA':'DANIEL'),.4,.15,{background:'#f2e6cf',color:'#4d2b27',fontSize:40});
-        if(mode==='gift'){
-          const label=textPanel('For '+name,String(details.message||'').slice(0,42),.33,.17,{background:'#f1e3c9',color:'#572637',fontSize:50});
-          const oldLabel=giftTag.material.map;giftTag.material.map=label.material.map;giftTag.material.needsUpdate=true;oldLabel?.dispose();label.geometry.dispose();label.material.dispose();
-        }
-        rig.detail.material.map=next.material.map;rig.detail.material.needsUpdate=true;previous?.dispose();next.geometry.dispose();next.material.dispose();
-      }
-    },
-    enter() { entered = true; canvas.focus({ preventScroll: true }); visit('entrance'); },
+    openEntrance,
+    leave(){openEntrance(true);pause(false);visit('door');},
+    enter() { openEntrance();doorHold=false;entered = true; canvas.focus({ preventScroll: true }); visit('entrance'); },
     setReducedMotion(value) { reduced = value; if (value && travel) { const end=travel.curve.getPointAt(1);const id=travel.id;travel=null;moveTo(end,id); } },
     dispose() {
       disposed = true; cancelAnimationFrame(frame); observer.disconnect(); abort.abort();

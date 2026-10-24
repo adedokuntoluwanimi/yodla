@@ -24,3 +24,13 @@ test('empty baskets and invalid quantities cannot start packing',()=>{
  assert.throws(()=>createOrder({mode:'checkout',lines:[]}));
  for(const quantity of [0,-1,100,NaN,1.5])assert.throws(()=>createOrder({mode:'checkout',lines:[{...wine,quantity}]}));
 });
+
+test('receipt precedes one handover per parcel and the departure decision',()=>{
+ const order=createOrder({mode:'gift',recipients:[{person:{name:'Ada'},lines:[wine]},{person:{name:'Tolu'},lines:[spirit]}]});
+ assert.equal(orderFrame(order,20,{paid:false,paidElapsed:100}).stage,'payment');
+ assert.equal(orderFrame(order,20,{paid:true,paidElapsed:0}).stage,'receipt');
+ const first=orderFrame(order,22,{paid:true,paidElapsed:2});assert.equal(first.stage,'handover');assert.equal(first.handoverIndex,0);
+ const second=orderFrame(order,25,{paid:true,paidElapsed:5});assert.equal(second.stage,'handover');assert.equal(second.handoverIndex,1);
+ assert.equal(orderFrame(order,30,{paid:true,paidElapsed:8}).stage,'complete');
+ assert.equal(orderFrame(order,30,{paid:true,paidElapsed:1,reduced:true}).stage,'complete');
+});

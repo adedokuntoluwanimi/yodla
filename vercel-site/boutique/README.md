@@ -55,3 +55,11 @@ Characters have articulated fingers, connected working arms, shaped facial featu
 Music remains optional and suspends while the page is hidden. Mobile checkout has no floating concierge over its controls.
 
 Validation includes pure order sequencing, quantity and recipient integrity, payment/receipt ordering, and a room simulation using real Three geometry and transforms with the GPU renderer stubbed. The room simulation packs five recipients, checks for non-finite transforms, prints a receipt, resets, and starts a personal checkout. Browser simulation covered personal checkout, a declined payment, payment cancellation, successful payment and receipt, plus a 390-by-667 mobile layout with three recipients and personalized tags. The QA browser cannot create WebGL contexts, so full 3D appearance, camera composition, and physical touch-device performance still need device review.
+
+## Readable cards, customer handover and entrance
+
+The original cellar wordmark remains. Its companion emblem is a cropped SVG view of the existing wine-cup logo asset. The extra wall wordmarks have been removed. Name badges and recipient cards use larger, darker type on unlit materials with tone mapping disabled, so room lights cannot wash out their contrast. Recipient messages remain fully available in the accessible tag details.
+
+A successful demo payment prints the receipt, then transfers each parcel into the first-person customer’s hands. Multi-recipient gifts are handed over separately. Only after the last transfer do “Shop more” and “Leave store” appear. Continuing removes the fulfilled quantities from the current browser-local selection while retaining recipient and delivery details; canceling before payment preserves everything.
+
+The front wall beside Daniel has framed glass windows and a hinged glass door, brass handles, a push sign and a swinging mechanical bell. Entry and exit open the door and trigger a short synthesised chime. Audio is created only after a visitor action. Leaving follows a collision-safe route to the entrance and shows a goodbye screen with a re-entry button. Reduced motion shortens parcel handovers.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { counterMarkup, counterSignature, wrapText, CASHIERS } from '../vercel-site/boutique/boutique-counter.js';
-import { createAmbientMusic } from '../vercel-site/boutique/boutique-music.js';
+import { createAmbientMusic, createDoorBell } from '../vercel-site/boutique/boutique-music.js';
 
 test('counter scene uses the selected bottles, recipient, message and delivery label safely',()=>{
   globalThis.location={origin:'https://preview.example'};
@@ -35,4 +35,12 @@ test('background music creates no audio until explicitly enabled and disposes it
   assert.equal(created,0);assert.equal(await music.toggle(),true);assert.equal(created,1);
   music.setVolume(.8);assert.equal(await music.toggle(),false);music.dispose();
   assert.equal(closed,1);assert.deepEqual(changes,[true,false]);delete globalThis.window;
+});
+
+test('entrance bell starts only on entry, debounces and releases its audio context',async()=>{
+ let contexts=0,tones=0,closed=0;
+ const param={value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}};
+ class AudioMock{constructor(){contexts++;this.currentTime=0;this.destination={};}async resume(){}createOscillator(){tones++;return {frequency:{...param},connect(){},disconnect(){},start(){},stop(){this.onended?.();}};}createGain(){return {gain:{...param},connect(){},disconnect(){}};}close(){closed++;}}
+ globalThis.window={AudioContext:AudioMock};
+ const bell=createDoorBell();assert.equal(contexts,0);assert.equal(await bell.ring(),true);assert.equal(tones,4);assert.equal(await bell.ring(),false);bell.dispose();assert.equal(closed,1);delete globalThis.window;
 });

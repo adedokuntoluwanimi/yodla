@@ -9,6 +9,7 @@ export const OBSTACLES = [
   { minX: 1.9, maxX: 5.6, minZ: -8.8, maxZ: -7.1 },
 ];
 export const STATIONS = {
+  door: { label: 'Glass entrance', position: [0, 1.7, 8.35], look: [0, 1.7, 10.5] },
   entrance: { label: 'Entrance', position: [0, 1.7, 7.6], look: [0, 1.7, -6] },
   wines: { label: 'The wine wall', position: [-3.9, 1.7, -2], look: [-6.5, 1.8, -3] },
   spirits: { label: 'Spirits & sparkle', position: [3.9, 1.7, 1], look: [6.5, 1.8, -1] },

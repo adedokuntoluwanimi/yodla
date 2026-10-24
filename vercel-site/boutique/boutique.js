@@ -1,6 +1,6 @@
 import { icon, enhanceUIIcons } from './boutique-icons.js';
 import { createOrder, orderFrame } from './boutique-order.js';
-import { createAmbientMusic } from './boutique-music.js';
+import { createAmbientMusic, createDoorBell } from './boutique-music.js';
 import { PRODUCTS, formatMoney as money, getProduct, getAvailability } from './catalog.js';
 import { loadPublishedContent, content } from './content-store.js';
 import { readCart, writeCart, addCartItem, setCartQuantity, getCartCount, getCartTotal } from './cart-store.js';
@@ -70,11 +70,14 @@ $('#close-panel').addEventListener('click', closePanel, events);
 dialog.addEventListener('click', event => { if (event.target === dialog && event.clientX < dialog.getBoundingClientRect().left) closePanel(); }, events);
 
 function enter() {
+  if(!scene)doorBell.ring().catch(()=>{});
   document.body.classList.add('entered');
   $('#welcome').inert = true;
   scene?.enter();
 }
 function visit(id) {
+  if(!document.body.classList.contains('entered')){if(scene)scene.openEntrance();else doorBell.ring().catch(()=>{});}
+  if(leaving)return;
   if(orderSession){toast("Finish at the counter, or return to shopping.");return;}
   if (!STATIONS[id]) return;
   document.body.classList.add('entered'); $('#welcome').inert = true;
@@ -85,6 +88,7 @@ function visit(id) {
   if (scene) scene.visit(id); else arrive(id);
 }
 function arrive(id) {
+  if(id==='door'){showGoodbye();return;}
   if(orderSession){beginCounter();return;}
   $('#travel-status').textContent='';
   $('#store-location').innerHTML = `<span>${esc(STATIONS[id].label.toUpperCase())}</span><small>${id === 'gifts' ? 'Your thought. Their moment.' : id === 'checkout' ? 'Everything for your evening.' : 'Stay a little. Find your bottle.'}</small>`;
@@ -217,7 +221,7 @@ function trySaveGift(draft) {
   catch { toast('Your gift could not be saved. Check that browser storage is enabled.'); return false; }
 }
 
-let orderSession=null, orderAnimation=0;
+let orderSession=null, orderAnimation=0,leaving=false;
 const checkoutMemory={};
 function basketLines(){
   const raw=shoppingFor==='gift'?readGiftDraft().items.map(i=>({id:i.productId,quantity:i.quantity})):readCart();
@@ -239,7 +243,7 @@ function startCounter(mode){
     $('#counter-session').hidden=false;
     $('#counter-host-name').textContent=mode==='gift'?'Nneka · Gift specialist':'Daniel · Checkout host';
     $('#counter-status').textContent='Bringing your basket to the counter…';
-    $('#counter-actions').replaceChildren();$('#counter-tags').replaceChildren();
+    $('#counter-actions').replaceChildren();$('#counter-tags').replaceChildren();$('#counter-cancel').hidden=false;
     if(scene)scene.visit(mode==='gift'?'gifts':'checkout');else beginCounter();
   }catch(error){toast(error.message,'error');}
 }
@@ -257,21 +261,25 @@ function tickOrder(now){
   const session=orderSession;
   if(!document.hidden && session.last)session.elapsed+=Math.max(0,(now-session.last)/1000);
   session.last=now;
-  const frame=orderFrame(session.order,session.elapsed,{reduced,paid:session.paid});
-  scene?.updateOrder(frame);
+  const frame=orderFrame(session.order,session.elapsed,{reduced,paid:session.paid,paidElapsed:session.paid?session.elapsed-session.paidAt:0});
+  session.stage=frame.stage;scene?.updateOrder(frame);
   const unit=frame.active,recipient=unit?session.order.parcels[unit.parcelIndex].person:null;
-  const status=frame.stage==='placing'?'Your basket is on the counter.':frame.stage==='packing'?`${session.order.mode==='gift'?'Nneka':'Daniel'} is packing ${unit.product.name}${recipient?.name?' for '+recipient.name:''}. ${frame.packed+1} of ${session.order.units.length} drinks.`:session.paid?'Demo payment complete. Your sample receipt is printing.':'Everything is packed. The POS is ready.';
+  const status=frame.stage==='placing'?'Your basket is on the counter.':frame.stage==='packing'?`${session.order.mode==='gift'?'Nneka':'Daniel'} is packing ${unit.product.name}${recipient?.name?' for '+recipient.name:''}. ${frame.packed+1} of ${session.order.units.length} drinks.`:frame.stage==='receipt'?'Demo payment complete. Your sample receipt is printing.':frame.stage==='handover'?`${session.order.mode==='gift'?'Nneka':'Daniel'} is handing you ${session.order.mode==='gift'?'the gift for '+session.order.parcels[frame.handoverIndex].person.name:'your bag'}.`:frame.stage==='complete'?'All yours. Would you like to shop more or leave?':'Everything is packed. The POS is ready.';
   if($('#counter-status').textContent!==status)$('#counter-status').textContent=status;
   if(!scene)renderCounterFallback(session.order,frame);
   if(frame.stage==='payment' && !$('#counter-pay')){
     $('#counter-actions').innerHTML=`<button class="primary" id="counter-pay">Pay at the POS · ${money(session.order.total)}</button><small>Concept payment · no charge</small>`;
     $('#counter-pay').addEventListener('click',openPayment);
   }
-  if(frame.stage==='receipt' && !session.printed){
-    session.printed=true;$('#counter-actions').innerHTML=`<article class="printed-receipt"><img class="brand-logo" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"><strong>SAMPLE RECEIPT</strong><small>Simulated payment · no order placed</small>${session.order.parcels.map(p=>`<div>${session.order.mode==='gift'?`<b>For ${esc(p.person.name)}</b>`:''}${p.lines.map(l=>`<p><span>${esc(l.name)} × ${l.quantity}</span><span>${money(l.price*l.quantity)}</span></p>`).join('')}</div>`).join('')}<p><span>Delivery${session.order.mode==='gift'&&session.order.wrap?' & gift wrap':''}</span><span>${money(session.order.total-session.order.parcels.reduce((sum,p)=>sum+p.lines.reduce((s,l)=>s+l.price*l.quantity,0),0))}</span></p><p><b>Total</b><b>${money(session.order.total)}</b></p><small>Prepared by ${session.order.mode==='gift'?'Nneka':'Daniel'} · Thank you</small></article><button class="secondary" id="counter-done">Return to boutique</button>`;
-    $('#counter-done').addEventListener('click',endCounter);
+  if(session.paid && !session.printed){
+    session.printed=true;$('#counter-actions').innerHTML=`<details class="counter-receipt"><summary>Your sample receipt</summary><article class="printed-receipt"><img class="brand-logo" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"><strong>SAMPLE RECEIPT</strong><small>Simulated payment · no order placed</small>${session.order.parcels.map(p=>`<div>${session.order.mode==='gift'?`<b>For ${esc(p.person.name)}</b>`:''}${p.lines.map(l=>`<p><span>${esc(l.name)} × ${l.quantity}</span><span>${money(l.price*l.quantity)}</span></p>`).join('')}</div>`).join('')}<p><span>Delivery${session.order.mode==='gift'&&session.order.wrap?' & gift wrap':''}</span><span>${money(session.order.total-session.order.parcels.reduce((sum,p)=>sum+p.lines.reduce((s,l)=>s+l.price*l.quantity,0),0))}</span></p><p><b>Total</b><b>${money(session.order.total)}</b></p><small>Prepared by ${session.order.mode==='gift'?'Nneka':'Daniel'} · Thank you</small></article></details>`;
+    $('#counter-cancel').hidden=true;
   }
-  orderAnimation=requestAnimationFrame(tickOrder);
+  if(frame.stage==='complete'&&!$('#counter-shop-more')){
+    const choices=document.createElement('div');choices.className='counter-decision';choices.innerHTML='<button class="primary" id="counter-shop-more">Shop more</button><button class="secondary" id="counter-leave">Leave store</button>';
+    $('#counter-actions').append(choices);$('#counter-shop-more').addEventListener('click',()=>finishVisit(false));$('#counter-leave').addEventListener('click',()=>finishVisit(true));
+  }
+  if(frame.stage!=='complete')orderAnimation=requestAnimationFrame(tickOrder);
 }
 function renderCounterFallback(order,frame){
   // Accessible room replacement on devices that cannot create a WebGL context.
@@ -284,6 +292,11 @@ function renderCounterFallback(order,frame){
     $('#fallback-parcels').innerHTML=order.parcels.map((p,index)=>`<div class="fallback-parcel ${order.mode==='gift'?'is-box':'is-bag'}"><span>${order.mode==='gift'?'For '+esc(p.person.name):'Yodla'}</span><div>${order.units.slice(0,frame.packed).filter(u=>u.parcelIndex===index).map(image).join('')}</div></div>`).join('');
   }
   $('#fallback-transfer').style.setProperty('--transfer',frame.unitProgress);
+  document.querySelectorAll('.fallback-parcel').forEach((el,i)=>{
+    const received=frame.stage==='complete'||frame.stage==='handover'&&i<frame.handoverIndex;
+    el.classList.toggle('is-received',received);
+    el.classList.toggle('is-handing-over',frame.stage==='handover'&&i===frame.handoverIndex);
+  });
 }
 function openPayment(){
   if(!orderSession || orderSession.paid)return;
@@ -293,9 +306,29 @@ function endCounter(){
   cancelAnimationFrame(orderAnimation);orderSession=null;scene?.endOrder();scene?.pause(false);scene?.setShoppingBasket(basketLines());
   $('#counter-session').hidden=true;$('#counter-fallback').dataset.frame='';document.body.classList.remove('at-counter');$('#payment-dialog').close();
 }
+function finishVisit(exit){
+  if(orderSession?.stage!=='complete')return;
+  const order=orderSession.order;
+  if(order.mode==='checkout'){
+    let remaining=readCart();for(const line of order.parcels[0].lines){const quantity=remaining.find(i=>i.id===line.id)?.quantity||0;remaining=setCartQuantity(remaining,line.id,Math.max(0,quantity-line.quantity));}writeCart(remaining);
+  }else{
+    const draft=readGiftDraft();for(const parcel of order.parcels)for(const line of parcel.lines){const item=draft.items.find(i=>i.recipientId===parcel.person.id&&i.productId===line.id);if(item)item.quantity=Math.max(0,item.quantity-line.quantity);}draft.items=draft.items.filter(i=>i.quantity>0);writeGiftDraft(draft);giftStep='bottles';
+  }
+  endCounter();updateBasket();if(exit)leaveStore();else openPanel('catalogue');
+}
+function leaveStore(){
+  if(orderSession)return;
+  if(dialog.open)closePanel();$('#travel-status').textContent='Heading to the glass door…';leaving=true;document.body.classList.add('leaving-store');
+  if(scene)scene.leave();else{doorBell.ring().catch(()=>{});showGoodbye();}
+}
+function showGoodbye(){
+  for(const child of $('#boutique').children)if(child!==$('#store-goodbye'))child.inert=true;
+  leaving=false;document.body.classList.remove('leaving-store');document.body.classList.add('outside-store');$('#store-goodbye').hidden=false;$('#goodbye-title').focus({preventScroll:true});scene?.pause(true);music.suspend();
+}
+$('#reenter-store').addEventListener('click',()=>{for(const child of $('#boutique').children)child.inert=child.id==='welcome';$('#store-goodbye').hidden=true;document.body.classList.remove('outside-store');scene?.pause(false);enter();if(!scene)document.querySelector('.basket-button')?.focus();music.resume().catch(()=>{});},events);
 document.addEventListener('visibilitychange',()=>{if(orderSession)orderSession.last=0;},events);
 $('#counter-cancel').addEventListener('click',endCounter,events);
-$('#simulate-payment').addEventListener('click',()=>{if(!orderSession)return;orderSession.paid=true;$('#payment-dialog').close();},events);
+$('#simulate-payment').addEventListener('click',()=>{if(!orderSession||orderSession.paid)return;orderSession.paid=true;orderSession.paidAt=orderSession.elapsed;$('#payment-dialog').close();$('#counter-cancel').hidden=true;$('#counter-actions').replaceChildren();$('#counter-status').textContent='Demo payment complete. Your sample receipt is printing.';},events);
 $('#decline-payment').addEventListener('click',()=>{$('#payment-status').textContent='Payment declined. Your packed items are still here. Try the simulation again or close payment.';},events);
 
 // Delegate controls so every shelf and panel uses the same basket and gift draft.
@@ -404,7 +437,7 @@ async function boot() {
   if(content.meta.stale)$('#catalogue-note').textContent='Showing the bundled collection. Prices and stock are confirmed at checkout.';
   try {
     const { createBoutique } = await import('./boutique-scene.js');
-    scene = createBoutique({ container: $('#scene'), products: PRODUCTS, reduceMotion: reduced,
+    scene = createBoutique({ container: $('#scene'), products: PRODUCTS, reduceMotion: reduced,onDoorBell:()=>doorBell.ring().catch(()=>{}),
       onSelect: id => { document.body.classList.add('entered'); $('#welcome').inert = true; openPanel('product', id); },
       onStation: arrive,
       onMove: () => { document.body.classList.add('entered'); $('#welcome').inert=true; },
@@ -416,7 +449,7 @@ async function boot() {
   } catch { fallback(); }
   scene?.setShoppingBasket(basketLines());
   $('#scene').addEventListener('boutique-render-error', ()=>{fallback();if(orderSession){$('#counter-fallback').hidden=false;orderSession.started=false;beginCounter();}}, events);
-  $('#scene').addEventListener('boutique-pos',openPayment,events);
+  $('#scene').addEventListener('boutique-pos',openPayment,events);$('#scene').addEventListener('boutique-exit',leaveStore,events);
   const path = location.pathname;
   if (path.includes('gifting') || new URLSearchParams(location.search).get('area') === 'gifts') visit('gifts');
   else if (path.includes('shop')) {
@@ -427,14 +460,15 @@ async function boot() {
     enter(); openPanel('catalogue');
   }
 }
-window.addEventListener('pagehide', () => { clearTimeout(toastTimer); cancelAnimationFrame(orderAnimation); music.dispose();scene?.dispose(); abort.abort(); }, { once: true });
+window.addEventListener('pagehide', () => { clearTimeout(toastTimer); cancelAnimationFrame(orderAnimation); music.dispose();doorBell.dispose();scene?.dispose(); abort.abort(); }, { once: true });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+const doorBell=createDoorBell();
 const music=createAmbientMusic({onChange:active=>{
-  $('#music-toggle').setAttribute('aria-pressed',String(active));$('#music-toggle').innerHTML=icon(active?'music':'mute')+`<span>Sound ${active?'on':'off'}</span>`;
+  $('#music-toggle').setAttribute('aria-pressed',String(active));$('#music-toggle').innerHTML=icon(active?'music':'mute')+`<span>Music ${active?'on':'off'}</span>`;
 }});
 $('#music-toggle').addEventListener('click',async()=>{try{await music.toggle();}catch{toast('Background music is unavailable in this browser.','error');}},events);
 $('#music-volume').addEventListener('input',event=>music.setVolume(event.target.value),events);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)music.suspend();else music.resume().catch(()=>{});},events);
-$('#help-button').innerHTML=icon('help');$('#panel-back').innerHTML=icon('back')+'<span>Back</span>';$('#music-toggle').innerHTML=icon('mute')+'<span>Sound off</span>';
+$('#help-button').innerHTML=icon('help');$('#panel-back').innerHTML=icon('back')+'<span>Back</span>';$('#music-toggle').innerHTML=icon('mute')+'<span>Music off</span>';
 enhanceUIIcons(document);
 boot().catch(fallback);
