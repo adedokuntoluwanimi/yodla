@@ -34,7 +34,7 @@ for (const file of ["three.module.js", "three.core.js"]) {
 }
 cpSync(join(root, "node_modules", "three", "examples", "jsm", "environments", "RoomEnvironment.js"), join(output, "js", "vendor", "three", "RoomEnvironment.js"));
 cpSync(join(root, "node_modules", "three", "LICENSE"), join(output, "js", "vendor", "three", "LICENSE.txt"));
-for (const file of ["boutique.js", "boutique-scene.js", "boutique-icons.js", "boutique-counter.js", "boutique-music.js", "boutique-checkout.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
+for (const file of ["boutique.js", "boutique-scene.js", "boutique-icons.js", "boutique-music.js", "boutique-checkout.js", "boutique-order.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
 cpSync(join(site, "boutique", "boutique.css"), join(output, "css", "boutique.css"));
 cpSync(join(site, "boutique", "boutique-counter.css"), join(output, "css", "boutique-counter.css"));
 

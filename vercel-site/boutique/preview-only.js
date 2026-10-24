@@ -17,7 +17,7 @@ function previewCheckout() {
   }
 }
 window.addEventListener('submit', event => {
-  if (event.target?.id === 'recipient-form') return;
+  if (['recipient-form','counter-delivery','close-payment-form'].includes(event.target?.id)) return;
   event.preventDefault();
   event.stopImmediatePropagation();
 }, true);

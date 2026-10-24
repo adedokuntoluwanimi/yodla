@@ -13,9 +13,7 @@ test('review deployment allows recipient saves while blocking external submissio
     const event={target:{id},defaultPrevented:false,stopped:false,preventDefault(){this.defaultPrevented=true;},stopImmediatePropagation(){this.stopped=true;}};
     submit(event);return event;
   };
-  const recipient=dispatch('recipient-form');
-  assert.equal(recipient.defaultPrevented,false);
-  assert.equal(recipient.stopped,false);
+  for(const id of ['recipient-form','counter-delivery','close-payment-form']){const local=dispatch(id);assert.equal(local.defaultPrevented,false);assert.equal(local.stopped,false);}
   for(const id of ['checkout-form','newsletter-form','contact-form']){
     const action=dispatch(id);assert.equal(action.defaultPrevented,true);assert.equal(action.stopped,true);
   }

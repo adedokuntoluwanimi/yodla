@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { parcelComplete } from './boutique-order.js';
 import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
 import { moveWithCollision, routeToStation, canStand, STATIONS } from './boutique-model.js';
 
@@ -139,6 +140,14 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     new THREE.Vector2(.043,.77), new THREE.Vector2(.047,.79), new THREE.Vector2(.047,.83),
     new THREE.Vector2(0,.83),
   ], 20);
+  const shapedBodies=new Map();
+  function bottleShape(product){
+    const type=/jack|vodka|gin|rum/i.test(product.id)?'spirit':/hennessy/i.test(product.id)?'cognac':/heineken|malt/i.test(product.id)?'beer':'wine';
+    if(!shapedBodies.has(type)){
+      const profile=type==='cognac'?[[0,0],[.13,0],[.15,.08],[.15,.38],[.12,.49],[.055,.55],[.045,.7],[0,.71]]:type==='spirit'?[[0,0],[.13,0],[.135,.05],[.135,.43],[.11,.49],[.045,.54],[.043,.72],[0,.74]]:type==='beer'?[[0,0],[.095,0],[.1,.04],[.1,.32],[.075,.39],[.04,.48],[.04,.68],[0,.69]]:null;
+      shapedBodies.set(type,profile?new THREE.LatheGeometry(profile.map(([x,y])=>new THREE.Vector2(x,y)),type==='spirit'?4:32):bottleBodyGeometry);
+    }return {geometry:shapedBodies.get(type),type};
+  }
   const glass = ['#182a16', '#3c2413', '#452719', '#1d301e', '#292322', '#354431'].map(color => new THREE.MeshPhysicalMaterial({ color, roughness: .17, metalness: .15, clearcoat: 1, clearcoatRoughness: .12 }));
   const goldGlass = new THREE.MeshStandardMaterial({ color: '#b59343', roughness: .24, metalness: .85 });
   const labels = new Map();
@@ -158,10 +167,12 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   }
   function bottle(product, x, y, z, parent, index = 0, scale = 1) {
     const group = new THREE.Group(); group.position.set(x, y, z); group.scale.setScalar(scale); parent.add(group);
-    const body = new THREE.Mesh(bottleBodyGeometry, /bottega/i.test(product.id) ? goldGlass : glass[index % glass.length]);
+    const shape=bottleShape(product),colorIndex=[...product.id].reduce((sum,char)=>sum+char.charCodeAt(0),0)%glass.length;
+    const body = new THREE.Mesh(shape.geometry, /bottega/i.test(product.id) ? goldGlass : /heineken/i.test(product.id)?glass[0]:glass[colorIndex]);
+    if(shape.type==='spirit')body.rotation.y=Math.PI/4;
     body.castShadow = true; body.userData.productId = product.id; group.add(body); interactives.push(body);
-    cylinder(.05, .05, .15, /bottega|hennessy/i.test(product.id) ? brass : black, 0, .77, 0, group, 16);
-    const label = new THREE.Mesh(new THREE.CylinderGeometry(.117, .117, .29, 16, 1, true, -.85, 1.7), new THREE.MeshStandardMaterial({ map: labelFor(product), roughness: .74, side: THREE.DoubleSide }));
+    cylinder(.05, .05, .15, /bottega|hennessy/i.test(product.id) ? brass : black, 0, shape.type==='wine'?.77:shape.type==='beer'?.65:.7, 0, group, 24);
+    const label = new THREE.Mesh(new THREE.CylinderGeometry(shape.type==='cognac'?.152:shape.type==='spirit'?.137:shape.type==='beer'?.102:.117,shape.type==='cognac'?.152:shape.type==='spirit'?.137:shape.type==='beer'?.102:.117,.29,24,1,true,-.85,1.7), new THREE.MeshStandardMaterial({ map: labelFor(product), roughness: .74, side: THREE.DoubleSide }));
     label.position.y = .29; label.userData.productId = product.id; group.add(label); interactives.push(label);
     return group;
   }
@@ -201,7 +212,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   box(2.8, .98, 1.15, wine, -3.95, .49, 4.85);
   box(3.06, .1, 1.35, marble, -3.95, 1.03, 4.85);
   for (const x of [-5.2, -2.7]) box(.03, .88, .03, brass, x, .5, 4.26);
-  const checkoutSign = sign('CHECKOUT', 'SOMETHING FOR YOURSELF', -4, 1.45, 4.75, 1.95, Math.PI);
+  const checkoutSign = sign('CHECKOUT', 'SOMETHING FOR YOURSELF', -4, .62, 4.24, 1.95, Math.PI);
   checkoutSign.userData.station = 'checkout'; checkoutSign.traverse(o => { if (o.isMesh) { o.userData.station = 'checkout'; interactives.push(o); } });
   const terminal = box(.35, .08, .3, black, -3.35, 1.13, 4.65); terminal.rotation.x = -.15;
   terminal.userData.station = 'checkout'; interactives.push(terminal);
@@ -249,25 +260,38 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   box(.55, .015, .4, paper, 2.65, 1.16, -7.96);
   const scissors = box(.2, .015, .03, brass, 2.6, 1.18, -7.8); scissors.rotation.y = .5;
 
+  const fabricMap=mapCanvas(128,128,(ctx,w,h)=>{ctx.fillStyle='#b6ac9a';ctx.fillRect(0,0,w,h);for(let x=0;x<w;x+=2){ctx.fillStyle=x%4?'#d7cebd':'#ada391';ctx.fillRect(x,0,1,h);}for(let y=0;y<h;y+=3){ctx.fillStyle='#bdb3a255';ctx.fillRect(0,y,w,1);}});
+  const skinMap=mapCanvas(128,128,(ctx,w,h)=>{ctx.fillStyle='#999999';ctx.fillRect(0,0,w,h);for(let i=0;i<7000;i++){ctx.fillStyle=`rgba(40,40,40,${random()*.14})`;ctx.fillRect(random()*w,random()*h,1,1);}});
   const cashierRig={};
   function addCashier(mode,name,x,z,rotation=0){
     const host=new THREE.Group();host.position.set(x,0,z);host.rotation.y=rotation;scene.add(host);
-    const skin=mat(mode==='gift'?'#8b5c41':'#75503c',.75),shirt=mat('#d7cebc',.9),apron=mat('#321923',.8),hair=mat('#221c18',.9);
+    const skin=new THREE.MeshPhysicalMaterial({color:mode==='gift'?'#8b5c41':'#75503c',roughness:.64,clearcoat:.08,bumpMap:skinMap,bumpScale:.002}),shirt=new THREE.MeshStandardMaterial({color:'#d7cebc',map:fabricMap,bumpMap:fabricMap,bumpScale:.002,roughness:.87}),apron=mat('#321923',.8),hair=mat('#221c18',.9);
     function sphere(rx,ry,rz,material,px,py,pz,parent=host){const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),material);mesh.scale.set(rx,ry,rz);mesh.position.set(px,py,pz);mesh.castShadow=true;parent.add(mesh);return mesh;}
     sphere(.27,.37,.16,shirt,0,1.15,0);
     box(.4,.5,.05,apron,0,1.11,.145,host);
     for(const side of [-1,1]){const strap=box(.035,.28,.025,apron,side*.13,1.42,.145,host);strap.rotation.z=side*.2;}
     cylinder(.065,.07,.15,skin,0,1.53,0,host);
-    sphere(.135,.18,.12,skin,0,1.75,.005);
+    sphere(.132,.172,.117,skin,0,1.75,.005);
+    sphere(.087,.064,.084,skin,0,1.637,.023);
+    for(const side of [-1,1])sphere(.051,.038,.04,skin,side*.069,1.715,.085);
     sphere(.14,.1,.13,hair,0,1.85,-.01);
     if(mode==='gift')sphere(.11,.11,.09,hair,-.09,1.94,-.05);
     sphere(.029,.05,.025,skin,-.136,1.74,0);sphere(.029,.05,.025,skin,.136,1.74,0);
-    sphere(.022,.026,.032,skin,0,1.73,.118);
+    sphere(.019,.046,.026,skin,0,1.744,.116);sphere(.025,.015,.025,skin,0,1.718,.132);
     for(const side of [-1,1]){
-      sphere(.012,.009,.007,black,side*.049,1.78,.112);
+      sphere(.025,.013,.009,mat('#cabba5',.48),side*.049,1.778,.11);
+      sphere(.009,.01,.005,mat('#38291e',.32),side*.049,1.778,.119);
+      sphere(.004,.005,.003,black,side*.049,1.778,.123);
+      sphere(.002,.002,.002,paper,side*.046,1.781,.126);
       const brow=box(.04,.008,.009,hair,side*.05,1.804,.111,host);brow.rotation.z=-side*.08;
     }
-    const mouth=new THREE.Mesh(new THREE.TorusGeometry(.031,.003,6,16,Math.PI),mat('#4f2c29',.8));mouth.rotation.z=Math.PI;mouth.position.set(0,1.68,.112);host.add(mouth);
+    const lip=mat('#694138',.72);sphere(.031,.006,.008,lip,0,1.675,.118);sphere(.029,.008,.01,lip,0,1.666,.115);
+    for(const side of [-1,1]){
+      sphere(.028,.007,.008,skin,side*.049,1.792,.11);
+      const collar=box(.09,.11,.02,shirt,side*.07,1.47,.135,host);collar.rotation.z=side*.45;
+      if(mode==='gift'){const earring=new THREE.Mesh(new THREE.TorusGeometry(.022,.004,8,20),brass);earring.position.set(side*.141,1.69,.005);host.add(earring);}
+    }
+    for(let i=0;i<16;i++){const lock=sphere(.018,.06,.022,hair,Math.cos(i*.5)*.112,1.862+Math.sin(i)*.012,-.016+Math.sin(i*.5)*.09);lock.rotation.z=Math.cos(i)*.3;}
     const tag=textPanel(name,'YODLA',.19,.075,{background:'#e7d9bc',color:'#3b1e27',fontSize:73});tag.position.set(.035,1.35,.184);host.add(tag);
     const arms=[];
     for(const side of [-1,1]){
@@ -280,13 +304,166 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     }
     for(const side of [-1,1])cylinder(.085,.07,.7,black,side*.11,.4,0,host,16);
     const detail=textPanel('Ready for you','',.4,.15,{background:'#f2e6cf',color:'#4d2b27',fontSize:40});detail.position.set(x,1.38,z+(rotation?-.65:.65));detail.rotation.y=rotation;scene.add(detail);
-    cashierRig[mode]={host,arms,detail,action:0,phase:0};
+    const workingArms=[];
+    for(const side of [-1,1]){
+      const upper=cylinder(.06,.047,1,shirt,0,0,0,host,24);
+      const fore=cylinder(.043,.031,1,skin,0,0,0,host,24);
+      const hand=sphere(.039,.06,.025,skin,0,0,0);hand.visible=false;
+      const fingers=[];for(let i=0;i<4;i++)fingers.push(sphere(.008,.034,.009,skin,0,0,0));
+      const thumb=sphere(.012,.028,.013,skin,0,0,0);fingers.push(thumb);
+      upper.visible=fore.visible=false;fingers.forEach(f=>f.visible=false);
+      workingArms.push({upper,fore,hand,fingers,side});
+    }
+    // Tailoring, shirt placket, apron seams, cuffs, and shoulder contours.
+    box(.012,.36,.008,paper,0,1.33,.159,host);
+    for(let i=0;i<4;i++)sphere(.008,.008,.004,brass,0,1.45-i*.07,.17);
+    box(.2,.105,.013,apron,.02,1.02,.183,host);
+    for(const side of [-1,1])sphere(.075,.09,.12,shirt,side*.22,1.39,0);
+    cashierRig[mode]={host,home:host.position.clone(),arms,workingArms,detail,action:0,phase:0};
   }
   addCashier('gift','Nneka',3.4,-8.9);
   addCashier('checkout','Daniel',-4,5.7,Math.PI);
   const logoTexture=new THREE.TextureLoader().load('/assets/brand/yodla-wordmark-4096-white.png');logoTexture.colorSpace=THREE.SRGBColorSpace;textures.push(logoTexture);
   for(const [x,z,rotation] of [[3.75,-7.484,0],[-3.95,4.263,Math.PI]]){
     const logo=new THREE.Mesh(new THREE.PlaneGeometry(.85,.19),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,depthWrite:false}));logo.position.set(x,.58,z);logo.rotation.y=rotation;scene.add(logo);
+  }
+
+  for(const [x,y,z,rotation] of [[-2.7,3.15,-9.64,0],[-6.86,3.85,5.9,Math.PI/2],[6.86,3.85,5.9,-Math.PI/2],[3.6,3.45,-9.64,0]]){
+    const logo=new THREE.Mesh(new THREE.PlaneGeometry(2,.45),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,depthWrite:false}));logo.position.set(x,y,z);logo.rotation.y=rotation;scene.add(logo);
+  }
+  // The shopper carries a woven basket. Every animation unit is copied from the order ledger.
+  function makeBasket(parent){
+    const g=new THREE.Group();parent.add(g);
+    box(.74,.035,.43,walnut,0,.015,0,g);
+    for(const side of [-1,1]){
+      for(let i=0;i<5;i++)box(.75,.018,.018,brass,0,.06+i*.045,side*.22,g);
+      for(let i=0;i<8;i++)box(.016,.24,.016,darkWood,-.35+i*.1,.14,side*.22,g);
+      for(let i=0;i<5;i++)box(.018,.018,.44,brass,side*.37,.06+i*.045,0,g);
+      const handle=new THREE.Mesh(new THREE.TorusGeometry(.26,.014,8,32,Math.PI),brass);handle.position.set(0,.27,side*.2);g.add(handle);
+    }return g;
+  }
+  scene.add(camera);
+  const carried=new THREE.Group();camera.add(carried);carried.position.set(.4,-.63,-1.05);carried.scale.setScalar(.7);
+  const shoppingBasket=makeBasket(carried),shoppingDrinks=new THREE.Group();carried.add(shoppingDrinks);carried.visible=false;
+  const orderRoot=new THREE.Group();scene.add(orderRoot);orderRoot.visible=false;
+  let orderDrinksGroup=null,renderedPacked=-1;
+  let orderData=null,orderBottleMeshes=[],orderParcels=[],counterBasket=null,pos=null,receipt=null,currentOrderFrame=null;
+  const orderAssets=[];
+  const baseMaterials=new Set([walnut,brass,darkWood,cream,paper,wine,black,goldGlass,...glass]);
+  let lastOrderShadow='';
+  function clearGroup(group){
+    const disposable=new Set();group.traverse(o=>{if(o.geometry && o.geometry!==bottleBodyGeometry && ![...shapedBodies.values()].includes(o.geometry))disposable.add(o.geometry);for(const material of Array.isArray(o.material)?o.material:o.material?[o.material]:[])if(!baseMaterials.has(material)){material.dispose();}
+      const index=interactives.indexOf(o);if(index>=0)interactives.splice(index,1);});
+    disposable.forEach(g=>g.dispose());group.clear();
+  }
+  function setShoppingBasket(lines){
+    clearGroup(shoppingDrinks);let index=0;
+    for(const product of lines)for(let i=0;i<product.quantity && index<12;i++,index++){
+      const drink=bottle(product,-.24+(index%4)*.16,.05,-.11+Math.floor(index/4)*.1,shoppingDrinks,index,.48);
+      drink.traverse(o=>{delete o.userData.productId;const index=interactives.indexOf(o);if(index>=0)interactives.splice(index,1);});
+    }
+    carried.visible=Boolean(lines.length)&&!orderData;
+  }
+  function parcelTag(person,message){
+    const texture=mapCanvas(1024,768,(ctx,w,h)=>{
+      ctx.fillStyle='#f2e8d3';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#a38457';ctx.lineWidth=4;ctx.strokeRect(22,22,w-44,h-44);
+      ctx.fillStyle='#532735';ctx.textAlign='center';ctx.font='52px Georgia';ctx.fillText('yodla',w/2,100);
+      ctx.font='26px Arial';ctx.fillText('A GIFT FOR',w/2,175);
+      const wrap=(value,max)=>{const words=String(value||'').split(/\s+/),lines=[''];for(const word of words){let i=lines.length-1;if((lines[i]+' '+word).length>max)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}return lines;};
+      ctx.font='52px Georgia';wrap(person.name||person.firstName||'You',26).slice(0,3).forEach((line,i)=>ctx.fillText(line,w/2,255+i*61,930));
+      ctx.font='italic 32px Georgia';wrap(message||'A little something for you.',44).slice(0,5).forEach((line,i)=>ctx.fillText(line,w/2,470+i*43,920));
+      ctx.font='20px Arial';ctx.fillText('PREPARED WITH CARE BY NNEKA',w/2,725);
+    });
+    const material=new THREE.MeshStandardMaterial({map:texture,roughness:.86,side:THREE.DoubleSide});orderAssets.push(material);
+    return new THREE.Mesh(new THREE.PlaneGeometry(.47,.35),material);
+  }
+  function beginOrder(order){
+    endOrder();orderData=order;orderRoot.visible=true;carried.visible=false;giftBox.visible=false;
+    const rig=cashierRig[order.mode];orderRoot.position.set(rig.host.position.x,0,rig.host.position.z);orderRoot.rotation.y=rig.host.rotation.y;rig.host.translateZ(.18);
+    counterBasket=makeBasket(orderRoot);counterBasket.position.set(-.55,1.13,.65);
+    orderDrinksGroup=new THREE.Group();orderRoot.add(orderDrinksGroup);renderedPacked=-1;
+    orderParcels=order.parcels.map((parcel,i)=>{
+      const g=new THREE.Group();g.position.set(.35+(i%2)*.65,1.13,.4+Math.floor(i/2)*.36);orderRoot.add(g);
+      const w=order.mode==='gift'?.62:.45,d=.45,h=order.mode==='gift'?.32:.5;
+      box(w,.02,d,paper,0,0,0,g);
+      box(w,h,.018,order.mode==='gift'?cream:paper,0,h/2,-d/2,g);
+      for(const side of [-1,1])box(.018,h,d,order.mode==='gift'?cream:paper,side*w/2,h/2,0,g);
+      box(w,h*.65,.018,order.mode==='gift'?cream:paper,0,h*.325,d/2,g);
+      const top=box(w+.025,.035,d+.025,wine,0,h+.02,0,g);top.visible=false;
+      const tag=parcelTag(parcel.person,parcel.message);tag.position.set(0,h*.56,d/2+.022);g.add(tag);tag.visible=false;
+      const tie=new THREE.Mesh(new THREE.TorusGeometry(.055,.007,8,24),brass);tie.position.set(.17,h+.07,0);tie.rotation.x=Math.PI/2;g.add(tie);tie.visible=false;
+      if(order.mode==='checkout'){
+        for(const side of [-1,1]){const handle=new THREE.Mesh(new THREE.TorusGeometry(.12,.012,8,24,Math.PI),darkWood);handle.position.set(0,h,side*d/2);g.add(handle);}
+        const mark=textPanel('yodla','',.3,.13,{background:'#eee0c7',color:'#4c202c',fontSize:85});mark.position.set(0,.2,d/2+.012);g.add(mark);
+      }
+      return {group:g,top,tag,tie};
+    });
+    pos=new THREE.Group();pos.position.set(0,1.18,.81);orderRoot.add(pos);pos.visible=false;
+    box(.22,.055,.34,black,0,0,0,pos);const display=textPanel('PAY','DEMO',.18,.15,{background:'#b2c3ad',color:'#17251c',fontSize:76});display.rotation.x=-Math.PI/2+.38;display.position.set(0,.058,-.02);pos.add(display);
+    pos.traverse(o=>{if(o.isMesh){o.userData.orderPOS=true;interactives.push(o);}});
+    receipt=new THREE.Group();receipt.position.set(-.02,1.2,.98);orderRoot.add(receipt);receipt.visible=false;
+    const receiptMap=mapCanvas(512,1024,(ctx,w,h)=>{
+      ctx.fillStyle='#f7f2e7';ctx.fillRect(0,0,w,h);ctx.fillStyle='#332520';ctx.textAlign='center';ctx.font='54px Georgia';ctx.fillText('yodla',w/2,85);ctx.font='24px monospace';ctx.fillText('SAMPLE RECEIPT',w/2,145);ctx.font='17px monospace';ctx.fillText('SIMULATED PAYMENT / NO ORDER',w/2,185);let y=240;ctx.textAlign='left';
+      for(const parcel of order.parcels){if(order.mode==='gift'){ctx.fillText('For '+parcel.person.name,24,y,460);y+=35;}for(const line of parcel.lines){ctx.fillText(line.name+' x '+line.quantity,24,y,460);y+=35;}if(y>800)break;}
+      ctx.fillText('TOTAL NGN '+order.total.toLocaleString('en-NG'),24,900);ctx.fillText('THANK YOU',24,965);
+    });const receiptMaterial=new THREE.MeshStandardMaterial({map:receiptMap,roughness:.95});orderAssets.push(receiptMaterial);
+    const receiptLabel=new THREE.Mesh(new THREE.PlaneGeometry(.29,.58),receiptMaterial);receiptLabel.rotation.x=-Math.PI/2;receipt.add(receiptLabel);
+    renderer.shadowMap.needsUpdate=true;
+  }
+  function positionArm(rig,arm,target){
+    const shoulder=new THREE.Vector3(arm.side*.25,1.4,0);
+    const wrist=rig.host.worldToLocal(target.clone());
+    const delta=wrist.clone().sub(shoulder);if(delta.length()>.58)wrist.copy(shoulder).add(delta.setLength(.58));
+    const elbow=shoulder.clone().lerp(wrist,.5);elbow.x+=arm.side*.095;elbow.z-=.1;
+    function bone(mesh,a,b){mesh.visible=true;mesh.position.copy(a).lerp(b,.5);mesh.scale.y=a.distanceTo(b);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());}
+    bone(arm.upper,shoulder,elbow);bone(arm.fore,elbow,wrist);arm.hand.visible=true;arm.hand.position.copy(wrist);arm.hand.rotation.x=-.7;
+    arm.fingers.forEach((f,i)=>{f.visible=true;f.position.copy(wrist).add(new THREE.Vector3((i-1.5)*.016,-.045,.012));f.rotation.x=-.65;});
+  }
+  function updateOrder(state){
+    if(!orderData)return;currentOrderFrame=state;
+    counterBasket.position.z=.65+(1-state.basketProgress)*.65;
+    const activeIndex=state.packed;
+    if(renderedPacked!==activeIndex){
+      clearGroup(orderDrinksGroup);
+      orderBottleMeshes=orderData.units.slice(activeIndex,activeIndex+12).map((unit,i)=>{
+        const mesh=bottle(unit.product,0,0,0,orderDrinksGroup,i,.52);mesh.traverse(o=>{delete o.userData.productId;const index=interactives.indexOf(o);if(index>=0)interactives.splice(index,1);});return mesh;
+      });renderedPacked=activeIndex;
+    }
+    orderBottleMeshes.forEach((mesh,slot)=>{
+      const i=activeIndex+slot,unit=orderData.units[i],parcel=orderParcels[unit.parcelIndex];
+      const source=new THREE.Vector3(-.75+(slot%4)*.13,1.17,.53+Math.floor(slot/4)*.1);
+      const dest=parcel.group.position.clone().add(new THREE.Vector3((i%3-1)*.12,.03,0));
+      if(i<activeIndex){mesh.position.copy(dest);mesh.visible=false;}
+      else if(i===activeIndex && state.stage==='packing'){
+        const t=state.unitProgress;
+        // Basket -> counter scan position -> open bag/box, one actual bottle at a time.
+        const middle=new THREE.Vector3(-.05,1.15,.48);
+        if(t<.5){const u=t*2;mesh.position.copy(source).lerp(middle,u);mesh.position.y+=Math.sin(u*Math.PI)*.24;}
+        else {const u=(t-.5)*2;mesh.position.copy(middle).lerp(dest,u);mesh.position.y+=Math.sin(u*Math.PI)*.32;}
+        mesh.visible=true;
+      }else{mesh.position.copy(source);mesh.position.z+=(1-state.basketProgress)*.65;mesh.visible=true;}
+    });
+    orderParcels.forEach((parcel,i)=>{
+      const complete=parcelComplete(orderData,state,i);
+      parcel.top.visible=orderData.mode==='gift'&&complete;parcel.tag.visible=orderData.mode==='gift'&&complete;parcel.tie.visible=orderData.mode==='gift'&&complete&&orderData.wrap;
+    });
+    pos.visible=state.stage==='payment'||state.stage==='receipt';receipt.visible=state.paid;
+    if(state.paid)receipt.scale.z=Math.min(1,receipt.scale.z+.035);else receipt.scale.z=.01;
+    const rig=cashierRig[orderData.mode];rig.arms.forEach(a=>a.shoulder.visible=false);
+    const current=orderBottleMeshes[0];
+    const reachX=current&&state.stage==='packing'?THREE.MathUtils.clamp(current.position.x,-.45,.65)*.7:0;rig.host.position.x=rig.home.x+reachX*(orderData.mode==='checkout'?-1:1);
+    rig.workingArms.forEach(arm=>{
+      const p=current&&state.stage==='packing'?current.position.clone().add(new THREE.Vector3(arm.side*.06,.22,0)):new THREE.Vector3(arm.side*.27,1.2,.48);
+      positionArm(rig,arm,orderRoot.localToWorld(p));
+    });
+    const shadowKey=state.stage+':'+state.packed;if(shadowKey!==lastOrderShadow){renderer.shadowMap.needsUpdate=true;lastOrderShadow=shadowKey;}
+  }
+  function endOrder(){
+    orderData=null;currentOrderFrame=null;orderRoot.visible=false;giftBox.visible=true;clearGroup(orderRoot);orderBottleMeshes=[];orderParcels=[];
+    for(let i=interactives.length-1;i>=0;i--)if(interactives[i].userData.orderPOS)interactives.splice(i,1);
+    orderAssets.splice(0).forEach(m=>{if(m.map){const index=textures.indexOf(m.map);if(index>=0)textures.splice(index,1);m.map.dispose();}m.dispose();});
+    for(const rig of Object.values(cashierRig)){rig.host.position.copy(rig.home);rig.arms.forEach(a=>a.shoulder.visible=true);rig.workingArms.forEach(a=>{a.upper.visible=a.fore.visible=a.hand.visible=false;a.fingers.forEach(f=>f.visible=false);});}
+    renderer.shadowMap.needsUpdate=true;
   }
 
   // Pendant lights, warm wall wash, and soft daylight from the storefront.
@@ -324,11 +501,11 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const hit = raycaster.intersectObjects(interactives, false).find(h => h.distance < 9);
     // Furniture and walls occlude bottle hit targets.
     if (!hit) return null;
-    const occlusion = raycaster.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.productId && !h.object.userData.station && !h.object.userData.overlay);
+    const occlusion = raycaster.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.productId && !h.object.userData.station && !h.object.userData.overlay && !h.object.userData.orderPOS);
     return occlusion && occlusion.distance + .04 < hit.distance ? null : hit;
   }
   canvas.addEventListener('pointerdown', e => {
-    if (paused) return;
+    if (paused && !orderData) return;
     canvas.focus({ preventScroll: true }); if (Number.isInteger(e.pointerId)) canvas.setPointerCapture(e.pointerId);
     drag = { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, yaw, pitch, moved: false };
   }, eventOptions);
@@ -347,6 +524,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     }
   }, eventOptions);
   canvas.addEventListener('pointerup', e => {
+    if (orderData) { const hit=cast(e);if(hit?.object.userData.orderPOS && currentOrderFrame?.stage==='payment')container.dispatchEvent(new CustomEvent('boutique-pos'));drag=null;return; }
     if (paused) { drag = null; return; }
     const moved = drag && (drag.moved || Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 10);
     drag = null;
@@ -438,7 +616,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   }
   frame = requestAnimationFrame(tick);
   return {
-    visit, pause,
+    visit, pause, setShoppingBasket, beginOrder, updateOrder, endOrder,
     setCounterAction(mode,progress,details={}){
       const rig=cashierRig[mode];if(!rig)return;rig.phase=progress;rig.wrap=details.wrap;renderer.shadowMap.needsUpdate=true;
       if(progress>=.75){

@@ -1,5 +1,5 @@
 import { icon, enhanceUIIcons } from './boutique-icons.js';
-import { counterMarkup, mountCounter, counterSignature } from './boutique-counter.js';
+import { createOrder, orderFrame } from './boutique-order.js';
 import { createAmbientMusic } from './boutique-music.js';
 import { PRODUCTS, formatMoney as money, getProduct, getAvailability } from './catalog.js';
 import { loadPublishedContent, content } from './content-store.js';
@@ -15,8 +15,8 @@ const safeImage = value => {
   return ['http:', 'https:'].includes(url.protocol) ? esc(url.href) : '/assets/gifting/gift-selection.webp';
 };
 const dialog = $('#store-dialog'), panel = $('#panel-content');
-let counterController, activeCounterConfig, recipientFormOpen=false, suppressFormCapture=false, pendingRemoval=null;
-const formMemory=new Map(), preparedCounters=new Set();
+let recipientFormOpen=false, suppressFormCapture=false, pendingRemoval=null;
+const formMemory=new Map();
 let shelfSection='', giftQuery='';
 let scene, activePanel = '', selectedProduct = '', cart = readCart(), giftStep = 'people', editingId = '', returnFocus;
 const stored = (storage, key) => { try { return window[storage].getItem(key); } catch { return null; } };
@@ -38,12 +38,13 @@ function toast(text, kind = 'info') {
   clearTimeout(toastTimer);
   if(kind!=='error')toastTimer=setTimeout(()=>{el.hidden=true;},5500);
 }
-function setPurpose(value) { shoppingFor = value; try { sessionStorage.setItem('yodla-boutique-purpose', value); } catch {} }
-function updateBasket() { cart = readCart(); $('#basket-count').textContent = getCartCount(cart); }
+function setPurpose(value) { shoppingFor = value; scene?.setShoppingBasket(basketLines()); try { sessionStorage.setItem('yodla-boutique-purpose', value); } catch {} }
+function updateBasket() { cart = readCart(); scene?.setShoppingBasket(basketLines()); $('#basket-count').textContent = getCartCount(cart); }
 function heading(kicker, title, copy = '') {
   return `<div class="panel-heading"><span class="eyebrow">${kicker}</span><h2 id="panel-title" tabindex="-1">${title}</h2>${copy ? `<p>${copy}</p>` : ''}</div>`;
 }
 function openPanel(type, data = '') {
+  if(orderSession)return;
   const activeNotice = !$('#toast').hidden ? $('#toast span')?.textContent : '';
   document.body.classList.add('panel-open');
   activePanel = type;
@@ -62,8 +63,8 @@ dialog.addEventListener('close', () => {
   if (dialog.open) return;
   document.body.classList.remove('panel-open');
   $('#dialog-notice').hidden=true;
-  captureRecipientForm();counterController?.dispose();counterController=null;
-  activePanel = ''; scene?.pause(false); returnFocus?.focus?.({ preventScroll: true });
+  captureRecipientForm();
+  activePanel = ''; scene?.pause(Boolean(orderSession?.started)); returnFocus?.focus?.({ preventScroll: true });
 }, events);
 $('#close-panel').addEventListener('click', closePanel, events);
 dialog.addEventListener('click', event => { if (event.target === dialog && event.clientX < dialog.getBoundingClientRect().left) closePanel(); }, events);
@@ -74,6 +75,7 @@ function enter() {
   scene?.enter();
 }
 function visit(id) {
+  if(orderSession){toast("Finish at the counter, or return to shopping.");return;}
   if (!STATIONS[id]) return;
   document.body.classList.add('entered'); $('#welcome').inert = true;
   if (dialog.open) closePanel();
@@ -83,6 +85,7 @@ function visit(id) {
   if (scene) scene.visit(id); else arrive(id);
 }
 function arrive(id) {
+  if(orderSession){beginCounter();return;}
   $('#travel-status').textContent='';
   $('#store-location').innerHTML = `<span>${esc(STATIONS[id].label.toUpperCase())}</span><small>${id === 'gifts' ? 'Your thought. Their moment.' : id === 'checkout' ? 'Everything for your evening.' : 'Stay a little. Find your bottle.'}</small>`;
   if (id === 'gifts') { setPurpose('gift'); openPanel('gift'); }
@@ -121,10 +124,10 @@ function bottleRows() {
 function basketPanel() {
   updateBasket();
   return `${heading('THE CHECKOUT COUNTER', 'For your evening.', 'Daniel will check and pack your selection. Gifts are prepared separately.')}
-    ${cart.length ? renderCounter({mode:'checkout',person:{name:'Your selection'},lines:cart.map(line=>({...getProduct(line.id),quantity:line.quantity})),total:getCartTotal(cart)}) : `<div class="cashier-welcome">${icon('bag')}<div><strong>Daniel</strong><span>Your checkout host</span></div></div>`}<div>${cart.map(line => {
+    ${cart.length ? '' : `<div class="cashier-welcome">${icon('bag')}<div><strong>Daniel</strong><span>Your checkout host</span></div></div>`}<div>${cart.map(line => {
     const p = getProduct(line.id);
     return `<article class="basket-line"><img src="${safeImage(p.image)}" alt=""><div><strong>${esc(p.name)}</strong><small>${money(p.price)}</small><div class="quantity"><button data-cart-qty="${esc(p.id)}" data-delta="-1" aria-label="Reduce ${esc(p.name)}">−</button><span>${line.quantity}</span><button data-cart-qty="${esc(p.id)}" data-delta="1" aria-label="Increase ${esc(p.name)}" ${line.quantity >= 24 ? 'disabled' : ''}>+</button></div></div><b>${money(p.price * line.quantity)}</b></article>`;
-  }).join('') || '<p class="empty">Your basket is waiting for a good bottle.</p>'}</div>${cart.length ? `<div class="totals"><div class="grand-total"><span>Bottles</span><span>${money(getCartTotal(cart))}</span></div></div><p class="compact-note">Delivery is calculated at checkout. Recipient must be 18 or older.</p><div class="dialog-actions sticky-actions"><a class="primary" href="/checkout.html">Delivery &amp; payment ${icon('arrow')}</a></div>` : ''}<div class="dialog-actions"><button class="secondary" data-open="catalogue">Keep browsing</button><button class="secondary" data-visit="gifts">Make a gift instead ↗</button></div><p class="compact-note">The Gift Atelier keeps its own selections. Your personal basket stays here.</p>`;
+  }).join('') || '<p class="empty">Your basket is waiting for a good bottle.</p>'}</div>${cart.length ? `<div class="totals"><div class="grand-total"><span>Bottles</span><span>${money(getCartTotal(cart))}</span></div></div><form id="counter-delivery" class="form-grid"><label class="full">Your name<input name="name" autocomplete="name" required value="${esc(checkoutMemory.name||'')}"></label><label>Email<input name="email" type="email" autocomplete="email" required value="${esc(checkoutMemory.email||'')}"></label><label>Phone<input name="phone" type="tel" autocomplete="tel" required value="${esc(checkoutMemory.phone||'')}"></label><label class="full">Delivery address<input name="address" autocomplete="street-address" required value="${esc(checkoutMemory.address||'')}"></label><label class="full">Delivery state<select name="state">${NIGERIAN_STATES.map(state=>`<option ${state===(checkoutMemory.state||'Lagos')?'selected':''}>${esc(state)}</option>`).join('')}</select></label></form><p class="compact-note">Delivery: ₦2,500 in Lagos, FCT, Abuja, Oyo and Rivers; ₦4,500 elsewhere. Recipient must be 18 or older.</p><div class="dialog-actions sticky-actions"><button type="button" class="primary" data-counter-start="checkout">Bring basket to Daniel ${icon('arrow')}</button></div>` : ''}<div class="dialog-actions"><button class="secondary" data-open="catalogue">Keep browsing</button><button class="secondary" data-visit="gifts">Make a gift instead ↗</button></div><p class="compact-note">The Gift Atelier keeps its own selections. Your personal basket stays here.</p>`;
 }
 function captureRecipientForm(){
   if(suppressFormCapture){suppressFormCapture=false;return;}
@@ -149,7 +152,7 @@ function giftBottlesPanel(draft) {
   return `<div class="recipient-switcher">${recipientSelect(draft)}<small>${draft.recipients.filter(p=>draft.items.some(i=>i.recipientId===p.id)).length} of ${draft.recipients.length} recipients have bottles</small></div><div class="selected-bottles">${lines.map(i => `<div class="selected-line"><span>${esc(getProduct(i.productId)?.name || 'Unavailable bottle')}</span><div class="quantity"><button data-gift-qty="${esc(i.productId)}" data-delta="-1" aria-label="Reduce ${esc(getProduct(i.productId)?.name)}">−</button><span>${i.quantity}</span><button data-gift-qty="${esc(i.productId)}" data-delta="1" aria-label="Increase ${esc(getProduct(i.productId)?.name)}" ${i.quantity >= 99 ? 'disabled' : ''}>+</button></div></div>`).join('') || '<p class="empty">Choose something they’ll love.</p>'}</div><div class="dialog-actions"><button class="secondary" id="browse-store">Choose from the shelves ↗</button></div><label class="gift-search-label" for="gift-search">Find a bottle<input id="gift-search" type="search" placeholder="Search bottle or brand" value="${esc(giftQuery)}"></label><div class="product-list gift-product-list">${PRODUCTS.map(p => {
     const available = getAvailability(p, catalogLocationForState(person.state)) !== 'unavailable';
     return `<button class="bottle-row" data-search="${esc(`${p.name} ${p.brand}`.toLowerCase())}" ${giftQuery && !`${p.name} ${p.brand}`.toLowerCase().includes(giftQuery.toLowerCase())?'hidden':''} data-add-gift="${esc(p.id)}" ${available ? '' : 'disabled'}><img src="${safeImage(p.image)}" alt="" loading="lazy"><span><strong>${esc(p.name)}</strong><small>${available ? money(p.price) : `Unavailable in ${esc(person.state)}`}</small></span><b>${available ? `${draft.items.find(i=>i.recipientId===giftPerson && i.productId===p.id)?.quantity || ''} ${icon('plus')}` : 'Unavailable'}</b></button>`;
-  }).join('')}</div><p class="empty" id="gift-search-empty" hidden>No bottles match your search.</p><div class="dialog-actions sticky-actions"><button class="secondary" data-gift-step="people">People</button><button class="primary" data-gift-step="wrap">Prepare &amp; review ${icon('arrow')}</button></div>`;
+  }).join('')}</div><p class="empty" id="gift-search-empty" hidden>No bottles match your search.</p><div class="dialog-actions sticky-actions"><button class="secondary" data-gift-step="people">People</button><button class="primary" data-gift-step="wrap">Presentation &amp; review ${icon('arrow')}</button></div>`;
 }
 function wrappingPanel(draft) {
   const person = draft.recipients.find(p => p.id === giftPerson) || draft.recipients[0];
@@ -159,8 +162,8 @@ function wrappingPanel(draft) {
   const error = giftDraftError(draft) || (unavailableGiftLines(draft, PRODUCTS).length ? 'A bottle is unavailable for its recipient. Go back to bottles and remove or replace it.' : '');
   return `${draft.recipients.length>1?recipientSelect(draft):''}
     <div class="wrap-options"><label class="check-label"><input type="checkbox" id="gift-wrap" ${draft.wrap?'checked':''}>Gift wrap <span>+${money(1500)}</span></label><label class="check-label"><input type="checkbox" id="gift-notify" ${draft.notify?'checked':''}>Email recipients after payment</label></div>
-    ${renderCounter({mode:'gift',person,lines:draft.items.filter(i=>i.recipientId===giftPerson).map(i=>({...getProduct(i.productId),quantity:i.quantity})),message:person?.message||draft.message||'',wrap:draft.wrap,total:totals.total})}
-    <p class="compact-note">Your recipient’s details and message are attached to this gift preview. Gift wrap is charged once per order.</p>${draft.recipients.map(p => `<article class="recipient-card" data-user-content><div><strong>${esc(p.name)}</strong><button data-edit-person="${esc(p.id)}">Edit</button></div><p>${esc(p.address)}, ${esc(p.state)}<br>${esc(p.email)}</p>${draft.items.filter(i => i.recipientId === p.id).map(i => `<p>${esc(getProduct(i.productId)?.name || 'Unavailable bottle')} × ${i.quantity} <b>${money((getProduct(i.productId)?.price || 0) * i.quantity)}</b></p>`).join('')}${p.message || draft.message ? `<p class="recipient-note">${esc(p.message || draft.message)}</p>` : ''}</article>`).join('')}<div class="totals"><div><span>Bottles</span><span>${money(totals.subtotal)}</span></div><div><span>Delivery, ${draft.recipients.length} ${draft.recipients.length === 1 ? 'person' : 'people'}</span><span>${money(totals.delivery)}</span></div>${draft.wrap ? `<div><span>Gift wrap</span><span>${money(totals.wrapping)}</span></div>` : ''}<div class="grand-total"><span>Total</span><span>${money(totals.total)}</span></div></div>${error ? `<p class="form-status">${esc(error)}</p>` : ''}<div class="dialog-actions sticky-actions">${error ? '<button class="primary" data-gift-step="bottles">Review bottle selections ↗</button>' : '<a class="primary" id="gift-checkout" href="/checkout.html?gift=1">Continue to gift checkout ↗</a>'}</div><p class="compact-note">One payment covers all recipients. Recipients must be 18 or older.</p>`;
+
+    <p class="compact-note">Each box gets its own recipient tag and personal message. Gift wrap is charged once per order.</p>${draft.recipients.map(p => `<article class="recipient-card" data-user-content><div><strong>${esc(p.name)}</strong><button data-edit-person="${esc(p.id)}">Edit</button></div><p>${esc(p.address)}, ${esc(p.state)}<br>${esc(p.email)}</p>${draft.items.filter(i => i.recipientId === p.id).map(i => `<p>${esc(getProduct(i.productId)?.name || 'Unavailable bottle')} × ${i.quantity} <b>${money((getProduct(i.productId)?.price || 0) * i.quantity)}</b></p>`).join('')}${p.message || draft.message ? `<p class="recipient-note">${esc(p.message || draft.message)}</p>` : ''}</article>`).join('')}<div class="totals"><div><span>Bottles</span><span>${money(totals.subtotal)}</span></div><div><span>Delivery, ${draft.recipients.length} ${draft.recipients.length === 1 ? 'person' : 'people'}</span><span>${money(totals.delivery)}</span></div>${draft.wrap ? `<div><span>Gift wrap</span><span>${money(totals.wrapping)}</span></div>` : ''}<div class="grand-total"><span>Total</span><span>${money(totals.total)}</span></div></div>${error ? `<p class="form-status">${esc(error)}</p>` : ''}<div class="dialog-actions sticky-actions">${error ? '<button class="primary" data-gift-step="bottles">Review bottle selections ↗</button>' : '<button class="primary" id="gift-checkout" data-counter-start="gift">Bring gifts to Nneka ↗</button>'}</div><p class="compact-note">One payment covers all recipients. Recipients must be 18 or older.</p>`;
 }
 function giftPanel() {
   const draft = readGiftDraft();
@@ -169,11 +172,8 @@ function giftPanel() {
 function helpPanel() {
   return `${heading('MAKE YOURSELF AT HOME', 'Take a look around.')}<div class="help-copy"><p>Click an open spot on the floor to move there. Hold and drag to look around, then click a bottle to see its details. No movement keys are required.</p><p>Use the map or section buttons for a direct route to the cellar, Gift Atelier, or checkout. On a phone, tap a section and select bottles from its list.</p><p>The map and navigation buttons also work with a keyboard. The bottle list gives you access to every product without walking.</p><p>Your personal basket and gift selections stay separate. Gifts can have up to five recipients, each with their own bottles and message.</p><p>This is a concept preview. Checkout uses the existing Yodla checkout page.</p></div><div class="dialog-actions"><button class="primary" data-open="catalogue">Browse bottles ↗</button></div>`;
 }
-function renderCounter(config){
-  activeCounterConfig=config;return counterMarkup(config);
-}
 function renderPanel() {
-  captureRecipientForm();counterController?.dispose();counterController=null;activeCounterConfig=null;
+  captureRecipientForm();
   const scroll=dialog.scrollTop,focused=document.activeElement;
   const identity=['data-add-gift','data-cart-qty','data-gift-qty'].find(attr=>focused?.hasAttribute?.(attr));
   const anchor=identity?{attr:identity,value:focused.getAttribute(identity),delta:focused.dataset.delta,top:focused.getBoundingClientRect().top}:null;
@@ -182,11 +182,7 @@ function renderPanel() {
   enhanceUIIcons(panel);dialog.scrollTop=scroll;
   if(anchor){const match=[...panel.querySelectorAll(`[${anchor.attr}]`)].find(el=>el.getAttribute(anchor.attr)===anchor.value && el.dataset.delta===anchor.delta);if(match){dialog.scrollTop+=match.getBoundingClientRect().top-anchor.top;match.focus({preventScroll:true});}}
 
-  const stage=panel.querySelector('.counter-experience');
-  if(stage && activeCounterConfig){
-    const config=activeCounterConfig,signature=counterSignature(config);
-    counterController=mountCounter(stage,{reduced,initial:preparedCounters.has(signature)?4:0,onComplete:()=>preparedCounters.add(signature),onFrame:progress=>scene?.setCounterAction(config.mode,progress,config)});
-  }
+
 }
 function continueGift(step){
   const form=$('#recipient-form');
@@ -213,13 +209,94 @@ function addForGift(id) {
   if (!product || getAvailability(product, catalogLocationForState(person.state)) === 'unavailable') return toast('This bottle is unavailable in their delivery state.');
   const quantity = draft.items.find(i => i.recipientId === person.id && i.productId === id)?.quantity || 0;
   if (quantity >= 99) return toast('The maximum is 99 of each bottle per recipient.');
-  try { setGiftQuantity(person.id, id, quantity + 1); renderPanel(); toast(`Added for ${person.firstName}.`); }
+  try { setGiftQuantity(person.id, id, quantity + 1); scene?.setShoppingBasket(basketLines()); renderPanel(); toast(`Added for ${person.firstName}.`); }
   catch { toast('Your gift could not be saved. Check that browser storage is enabled.'); }
 }
 function trySaveGift(draft) {
   try { writeGiftDraft(draft); return true; }
   catch { toast('Your gift could not be saved. Check that browser storage is enabled.'); return false; }
 }
+
+let orderSession=null, orderAnimation=0;
+const checkoutMemory={};
+function basketLines(){
+  const raw=shoppingFor==='gift'?readGiftDraft().items.map(i=>({id:i.productId,quantity:i.quantity})):readCart();
+  return raw.map(i=>({...getProduct(i.id),quantity:i.quantity})).filter(p=>p.id);
+}
+function startCounter(mode){
+  const draft=readGiftDraft();
+  if(mode==='checkout'){const form=$('#counter-delivery');if(!form?.reportValidity())return;Object.assign(checkoutMemory,Object.fromEntries(new FormData(form)));const unavailable=readCart().some(i=>getAvailability(getProduct(i.id),catalogLocationForState(checkoutMemory.state))==='unavailable');if(unavailable){toast('One of your bottles is unavailable in this delivery state. Update your selection.','error');return;}}
+  if(mode==='gift'){
+    const error=giftDraftError(draft) || (unavailableGiftLines(draft,PRODUCTS).length?'Review unavailable bottles first.':'');
+    if(error){toast(error,'error');return;}
+  }
+  try{
+    const order=createOrder({mode,person:checkoutMemory,lines:readCart().map(i=>({...getProduct(i.id),quantity:i.quantity})),
+      recipients:draft.recipients.map(person=>({person, message:person.message||draft.message,lines:draft.items.filter(i=>i.recipientId===person.id).map(i=>({...getProduct(i.productId),quantity:i.quantity}))})),
+      total:mode==='gift'?giftCost(draft,PRODUCTS).total:getCartTotal(readCart())+(['Lagos','FCT','Abuja','Oyo','Rivers'].includes(checkoutMemory.state)?2500:4500),wrap:draft.wrap});
+    orderSession={order,elapsed:0,paid:false,started:false,last:0,printed:false};
+    closePanel();document.body.classList.add('at-counter','entered');$('#welcome').inert=true;
+    $('#counter-session').hidden=false;
+    $('#counter-host-name').textContent=mode==='gift'?'Nneka · Gift specialist':'Daniel · Checkout host';
+    $('#counter-status').textContent='Bringing your basket to the counter…';
+    $('#counter-actions').replaceChildren();$('#counter-tags').replaceChildren();
+    if(scene)scene.visit(mode==='gift'?'gifts':'checkout');else beginCounter();
+  }catch(error){toast(error.message,'error');}
+}
+function beginCounter(){
+  if(!orderSession || orderSession.started)return;
+  orderSession.started=true;scene?.pause(true);scene?.beginOrder(orderSession.order);
+  $('#counter-fallback').hidden=Boolean(scene);
+  if(!scene)$('#counter-fallback').innerHTML='<div class="fallback-wall"><small>Simplified counter · 3D unavailable on this device</small><img src="/assets/brand/yodla-wordmark.svg" alt="Yodla"></div><div class="fallback-worktop"><div class="fallback-basket"><span>Your basket</span><div id="fallback-drinks"></div></div><div id="fallback-transfer"></div><div class="fallback-parcels" id="fallback-parcels"></div></div>';
+  const order=orderSession.order;
+  $('#counter-tags').innerHTML=order.mode==='gift'?order.parcels.map((p,i)=>`<details class="gift-tag-details"><summary>Gift tag · ${esc(p.person.name||p.person.firstName)}</summary><div data-user-content><strong>For ${esc(p.person.name||p.person.firstName)}</strong><p class="gift-message">${esc(p.message||'A little something for you.')}</p><small>Delivery label</small><p>${esc(p.person.address)}, ${esc(p.person.state)}</p>${p.lines.map(l=>`<p>${esc(l.name)} × ${l.quantity}</p>`).join('')}</div></details>`).join(''):'';
+  orderAnimation=requestAnimationFrame(tickOrder);
+}
+function tickOrder(now){
+  if(!orderSession)return;
+  const session=orderSession;
+  if(!document.hidden && session.last)session.elapsed+=Math.max(0,(now-session.last)/1000);
+  session.last=now;
+  const frame=orderFrame(session.order,session.elapsed,{reduced,paid:session.paid});
+  scene?.updateOrder(frame);
+  const unit=frame.active,recipient=unit?session.order.parcels[unit.parcelIndex].person:null;
+  const status=frame.stage==='placing'?'Your basket is on the counter.':frame.stage==='packing'?`${session.order.mode==='gift'?'Nneka':'Daniel'} is packing ${unit.product.name}${recipient?.name?' for '+recipient.name:''}. ${frame.packed+1} of ${session.order.units.length} drinks.`:session.paid?'Demo payment complete. Your sample receipt is printing.':'Everything is packed. The POS is ready.';
+  if($('#counter-status').textContent!==status)$('#counter-status').textContent=status;
+  if(!scene)renderCounterFallback(session.order,frame);
+  if(frame.stage==='payment' && !$('#counter-pay')){
+    $('#counter-actions').innerHTML=`<button class="primary" id="counter-pay">Pay at the POS · ${money(session.order.total)}</button><small>Concept payment · no charge</small>`;
+    $('#counter-pay').addEventListener('click',openPayment);
+  }
+  if(frame.stage==='receipt' && !session.printed){
+    session.printed=true;$('#counter-actions').innerHTML=`<article class="printed-receipt"><img class="brand-logo" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"><strong>SAMPLE RECEIPT</strong><small>Simulated payment · no order placed</small>${session.order.parcels.map(p=>`<div>${session.order.mode==='gift'?`<b>For ${esc(p.person.name)}</b>`:''}${p.lines.map(l=>`<p><span>${esc(l.name)} × ${l.quantity}</span><span>${money(l.price*l.quantity)}</span></p>`).join('')}</div>`).join('')}<p><span>Delivery${session.order.mode==='gift'&&session.order.wrap?' & gift wrap':''}</span><span>${money(session.order.total-session.order.parcels.reduce((sum,p)=>sum+p.lines.reduce((s,l)=>s+l.price*l.quantity,0),0))}</span></p><p><b>Total</b><b>${money(session.order.total)}</b></p><small>Prepared by ${session.order.mode==='gift'?'Nneka':'Daniel'} · Thank you</small></article><button class="secondary" id="counter-done">Return to boutique</button>`;
+    $('#counter-done').addEventListener('click',endCounter);
+  }
+  orderAnimation=requestAnimationFrame(tickOrder);
+}
+function renderCounterFallback(order,frame){
+  // Accessible room replacement on devices that cannot create a WebGL context.
+  const image=unit=>`<img src="${safeImage(unit.product.image)}" alt="${esc(unit.product.name)}">`;
+  const key=`${frame.stage}:${frame.packed}`;
+  if($('#counter-fallback').dataset.frame!==key){
+    $('#counter-fallback').dataset.frame=key;
+    $('#fallback-drinks').innerHTML=order.units.slice(frame.packed+(frame.stage==='packing'?1:0)).map(image).join('');
+    $('#fallback-transfer').innerHTML=frame.stage==='packing'&&frame.active?image(frame.active):'';
+    $('#fallback-parcels').innerHTML=order.parcels.map((p,index)=>`<div class="fallback-parcel ${order.mode==='gift'?'is-box':'is-bag'}"><span>${order.mode==='gift'?'For '+esc(p.person.name):'Yodla'}</span><div>${order.units.slice(0,frame.packed).filter(u=>u.parcelIndex===index).map(image).join('')}</div></div>`).join('');
+  }
+  $('#fallback-transfer').style.setProperty('--transfer',frame.unitProgress);
+}
+function openPayment(){
+  if(!orderSession || orderSession.paid)return;
+  $('#payment-total').textContent=money(orderSession.order.total);$('#payment-status').textContent='';$('#payment-dialog').showModal();
+}
+function endCounter(){
+  cancelAnimationFrame(orderAnimation);orderSession=null;scene?.endOrder();scene?.pause(false);scene?.setShoppingBasket(basketLines());
+  $('#counter-session').hidden=true;$('#counter-fallback').dataset.frame='';document.body.classList.remove('at-counter');$('#payment-dialog').close();
+}
+document.addEventListener('visibilitychange',()=>{if(orderSession)orderSession.last=0;},events);
+$('#counter-cancel').addEventListener('click',endCounter,events);
+$('#simulate-payment').addEventListener('click',()=>{if(!orderSession)return;orderSession.paid=true;$('#payment-dialog').close();},events);
+$('#decline-payment').addEventListener('click',()=>{$('#payment-status').textContent='Payment declined. Your packed items are still here. Try the simulation again or close payment.';},events);
 
 // Delegate controls so every shelf and panel uses the same basket and gift draft.
 document.addEventListener('click', event => {
@@ -239,6 +316,7 @@ document.addEventListener('click', event => {
   if(button.id==='confirm-remove'){
     try{removeGiftRecipient(pendingRemoval);pendingRemoval=null;editingId='';renderPanel();toast('Recipient removed.');}catch{toast('That change could not be saved.','error');}return;
   }
+  if(data.counterStart){event.preventDefault();startCounter(data.counterStart);return;}
   if (data.visit) { visit(data.visit); return; }
   if (data.open) { if (data.open === 'catalogue' && activePanel!=='product') { filterQuery = ''; filterCategory = 'All'; shelfSection=''; } openPanel(data.open); return; }
   if (data.product) { openPanel('product', data.product); return; }
@@ -268,6 +346,8 @@ document.addEventListener('click', event => {
     if (error || unavailableGiftLines(draft, PRODUCTS).length) { event.preventDefault(); toast(error || 'Review unavailable bottles before checkout.'); }
   }
 }, events);
+document.addEventListener('submit',event=>{if(event.target.id==='counter-delivery'){event.preventDefault();startCounter('checkout');}},events);
+document.addEventListener('input',event=>{if(event.target.closest('#counter-delivery'))Object.assign(checkoutMemory,Object.fromEntries(new FormData($('#counter-delivery'))));},events);
 document.addEventListener('change', event => {
   const target = event.target;
   if (target.id === 'self-state') { try { localStorage.setItem('yodla-location-v2', target.value); } catch {} renderPanel(); }
@@ -334,7 +414,9 @@ async function boot() {
     });
     $('#loading').hidden = true;
   } catch { fallback(); }
-  $('#scene').addEventListener('boutique-render-error', fallback, events);
+  scene?.setShoppingBasket(basketLines());
+  $('#scene').addEventListener('boutique-render-error', ()=>{fallback();if(orderSession){$('#counter-fallback').hidden=false;orderSession.started=false;beginCounter();}}, events);
+  $('#scene').addEventListener('boutique-pos',openPayment,events);
   const path = location.pathname;
   if (path.includes('gifting') || new URLSearchParams(location.search).get('area') === 'gifts') visit('gifts');
   else if (path.includes('shop')) {
@@ -345,7 +427,7 @@ async function boot() {
     enter(); openPanel('catalogue');
   }
 }
-window.addEventListener('pagehide', () => { clearTimeout(toastTimer); counterController?.dispose();music.dispose();scene?.dispose(); abort.abort(); }, { once: true });
+window.addEventListener('pagehide', () => { clearTimeout(toastTimer); cancelAnimationFrame(orderAnimation); music.dispose();scene?.dispose(); abort.abort(); }, { once: true });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 const music=createAmbientMusic({onChange:active=>{
   $('#music-toggle').setAttribute('aria-pressed',String(active));$('#music-toggle').innerHTML=icon(active?'music':'mute')+`<span>Sound ${active?'on':'off'}</span>`;

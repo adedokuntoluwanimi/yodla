@@ -52,6 +52,12 @@
     <nav class="mobile-stations" aria-label="Tap to move around the boutique">
       <button data-visit="wines">Cellar</button><button data-visit="spirits">Spirits</button><button data-visit="gifts">Gifting</button><button data-visit="checkout">Checkout</button>
     </nav>
+    <section id="counter-session" class="counter-session" aria-label="At the counter" hidden>
+      <div class="counter-session-head"><span id="counter-host-name"></span><button id="counter-cancel" class="secondary">Return to shopping</button></div>
+      <div id="counter-fallback" class="counter-room-fallback" hidden></div>
+      <div class="counter-session-info"><p id="counter-status" role="status" aria-live="polite"></p><div id="counter-tags"></div><div id="counter-actions"></div></div>
+    </section>
+    <dialog id="payment-dialog" class="payment-dialog" aria-labelledby="payment-title"><form method="dialog" id="close-payment-form"><button class="close" aria-label="Close payment">×</button></form><img class="brand-logo" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"><span class="eyebrow">DEMO PAYMENT GATEWAY</span><h2 id="payment-title">Your payment</h2><p id="payment-total"></p><p>This concept simulates payment. No card details or money are collected.</p><button class="primary" id="simulate-payment">Simulate successful payment</button><button class="secondary" id="decline-payment">Simulate declined payment</button><p id="payment-status" role="status"></p></dialog>
     <dialog id="store-dialog" aria-labelledby="panel-title">
       <div class="dialog-top"><button id="panel-back" class="panel-back" aria-label="Go back" hidden>Back</button><a class="wordmark" href="/index.html" aria-label="Yodla boutique"><img class="brand-logo" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"></a><button class="close" id="close-panel" aria-label="Return to the store">×</button></div>
       <div id="dialog-notice" class="dialog-notice" role="status" aria-live="polite" hidden></div>
