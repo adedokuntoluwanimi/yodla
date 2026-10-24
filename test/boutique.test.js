@@ -79,3 +79,11 @@ test('recipient IDs also work on HTTP development previews', () => {
     delete globalThis.localStorage;
   }
 });
+
+test('invalid pointer destinations cannot create a navigation route', async () => {
+  const {routeToStation}=await import('../js/boutique-model.js');
+  assert.equal(canStand(undefined,0),false);
+  assert.equal(canStand(0,NaN),false);
+  assert.deepEqual(routeToStation({x:0,z:7},{x:NaN,z:0}),[]);
+  assert.deepEqual(routeToStation(null,{x:0,z:7}),[]);
+});

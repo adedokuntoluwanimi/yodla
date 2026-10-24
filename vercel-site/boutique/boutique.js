@@ -17,12 +17,20 @@ const stored = (storage, key) => { try { return window[storage].getItem(key); } 
 let shoppingFor = stored('sessionStorage', 'yodla-boutique-purpose') || 'self';
 let giftPerson = readGiftDraft().recipients[0]?.id || '';
 let reduced = matchMedia('(prefers-reduced-motion: reduce)').matches || stored('localStorage', 'yodla-boutique-motion') === 'reduced';
+let pendingGiftStep = '';
 let toastTimer, lastVisit = '', pendingGiftProduct = '', filterQuery = '', filterCategory = 'All';
 const abort = new AbortController(), events = { signal: abort.signal };
 
-function toast(text) {
-  const el = $('#toast'); el.textContent = text; el.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 4200);
+function toast(text, kind = 'info') {
+  const el = dialog.open ? $('#dialog-notice') : $('#toast');
+  const other = dialog.open ? $('#toast') : $('#dialog-notice');
+  other.hidden = true;
+  const copy = document.createElement('span');copy.textContent = text;
+  const dismiss = document.createElement('button');dismiss.type='button';dismiss.dataset.dismissNotice='';
+  dismiss.setAttribute('aria-label','Dismiss notification');dismiss.textContent='×';
+  el.replaceChildren(copy,dismiss);el.dataset.kind=kind;el.setAttribute('role',kind==='error'?'alert':'status');el.hidden=false;
+  clearTimeout(toastTimer);
+  if(kind!=='error')toastTimer=setTimeout(()=>{el.hidden=true;},5500);
 }
 function setPurpose(value) { shoppingFor = value; try { sessionStorage.setItem('yodla-boutique-purpose', value); } catch {} }
 function updateBasket() { cart = readCart(); $('#basket-count').textContent = getCartCount(cart); }
@@ -30,10 +38,13 @@ function heading(kicker, title, copy = '') {
   return `<div class="panel-heading"><span class="eyebrow">${kicker}</span><h2 id="panel-title" tabindex="-1">${title}</h2>${copy ? `<p>${copy}</p>` : ''}</div>`;
 }
 function openPanel(type, data = '') {
+  const activeNotice = !$('#toast').hidden ? $('#toast span')?.textContent : '';
+  document.body.classList.add('panel-open');
   activePanel = type;
   if (type === 'product') selectedProduct = data;
   if (!dialog.open) { returnFocus = document.activeElement; dialog.showModal(); }
   scene?.pause(true);
+  if(activeNotice)toast(activeNotice);
   renderPanel();
   requestAnimationFrame(() => $('#panel-title')?.focus({ preventScroll: true }));
 }
@@ -42,6 +53,8 @@ function closePanel() {
 }
 dialog.addEventListener('close', () => {
   if (dialog.open) return;
+  document.body.classList.remove('panel-open');
+  $('#dialog-notice').hidden=true;
   activePanel = ''; scene?.pause(false); returnFocus?.focus?.({ preventScroll: true });
 }, events);
 $('#close-panel').addEventListener('click', closePanel, events);
@@ -103,7 +116,7 @@ function basketPanel() {
 }
 function peoplePanel(draft) {
   const edit = draft.recipients.find(p => p.id === editingId) || {};
-  return `<p class="compact-note">Up to five people. Each gets their own bottles, delivery address, and personal message.</p>${draft.recipients.map(p => `<article class="recipient-card"><div><strong>${esc(p.name)}</strong><span><button data-edit-person="${esc(p.id)}">Edit</button><button data-remove-person="${esc(p.id)}">Remove</button></span></div><p>${esc(p.email)}<br>${esc(p.address)}, ${esc(p.state)}</p>${p.message ? `<p class="recipient-note">${esc(p.message)}</p>` : ''}</article>`).join('')}${draft.recipients.length < 5 || editingId ? `<form id="recipient-form"><div class="panel-heading"><span class="eyebrow">${editingId ? 'EDIT RECIPIENT' : `RECIPIENT ${draft.recipients.length + 1}`}</span></div><div class="form-grid">${[['firstName','First name','text'],['lastName','Last name','text'],['email','Email','email'],['phone','Phone','tel'],['address','Delivery address','text']].map(([key,label,type]) => `<label class="${key === 'address' ? 'full' : ''}">${label}<input name="${key}" type="${type}" value="${esc(edit[key])}" required maxlength="${key === 'email' ? 160 : key === 'address' ? 300 : 80}" autocomplete="${({ firstName:'given-name', lastName:'family-name', email:'email', phone:'tel', address:'street-address' })[key]}"></label>`).join('')}<label>State<select name="state" required><option value="">Choose state</option>${NIGERIAN_STATES.map(s => `<option ${s === edit.state ? 'selected' : ''}>${s}</option>`).join('')}</select></label><label>Courier note<input name="note" value="${esc(edit.note)}" maxlength="500" placeholder="Gate, landmark, timing"></label><label class="full">Their personal message<textarea name="message" maxlength="500" rows="3" placeholder="A little something, just for you…">${esc(edit.message)}</textarea></label></div><div class="dialog-actions"><button class="secondary" type="submit">${editingId ? 'Save changes' : 'Add recipient'} +</button>${editingId ? '<button class="secondary" type="button" id="cancel-edit">Cancel edit</button>' : ''}</div><p class="form-status" id="recipient-status" role="status"></p></form>` : '<p class="compact-note">Five recipients added. Edit or remove a person to make changes.</p>'}<div class="dialog-actions"><button class="primary" data-gift-step="bottles" ${draft.recipients.length ? '' : 'disabled'}>Choose their bottles ↗</button></div>`;
+  return `<p class="compact-note">Up to five people. Each gets their own bottles, delivery address, and personal message.</p>${draft.recipients.map(p => `<article class="recipient-card"><div><strong>${esc(p.name)}</strong><span><button data-edit-person="${esc(p.id)}">Edit</button><button data-remove-person="${esc(p.id)}">Remove</button></span></div><p>${esc(p.email)}<br>${esc(p.address)}, ${esc(p.state)}</p>${p.message ? `<p class="recipient-note">${esc(p.message)}</p>` : ''}</article>`).join('')}${draft.recipients.length < 5 || editingId ? `<form id="recipient-form"><div class="panel-heading"><span class="eyebrow">${editingId ? 'EDIT RECIPIENT' : `RECIPIENT ${draft.recipients.length + 1}`}</span></div><div class="form-grid">${[['firstName','First name','text'],['lastName','Last name','text'],['email','Email','email'],['phone','Phone','tel'],['address','Delivery address','text']].map(([key,label,type]) => `<label class="${key === 'address' ? 'full' : ''}">${label}<input name="${key}" type="${type}" value="${esc(edit[key])}" required maxlength="${key === 'email' ? 160 : key === 'address' ? 300 : 80}" autocomplete="${({ firstName:'given-name', lastName:'family-name', email:'email', phone:'tel', address:'street-address' })[key]}"></label>`).join('')}<label>State<select name="state" required><option value="">Choose state</option>${NIGERIAN_STATES.map(s => `<option ${s === edit.state ? 'selected' : ''}>${s}</option>`).join('')}</select></label><label>Courier note<input name="note" value="${esc(edit.note)}" maxlength="500" placeholder="Gate, landmark, timing"></label><label class="full">Their personal message<textarea name="message" maxlength="500" rows="3" placeholder="A little something, just for you…">${esc(edit.message)}</textarea></label></div><div class="dialog-actions"><button class="secondary" type="submit">${editingId ? 'Save changes' : 'Add recipient'} +</button>${editingId ? '<button class="secondary" type="button" id="cancel-edit">Cancel edit</button>' : ''}</div><p class="form-status" id="recipient-status" role="status"></p></form>` : '<p class="compact-note">Five recipients added. Edit or remove a person to make changes.</p>'}<div class="dialog-actions"><button class="primary" data-save-and-continue>${draft.recipients.length ? 'Choose their bottles' : 'Save recipient & choose bottles'} ↗</button></div>`;
 }
 function giftBottlesPanel(draft) {
   if (!draft.recipients.length) return '<p class="empty">Add a recipient first.</p>';
@@ -125,10 +138,10 @@ function wrappingPanel(draft) {
 }
 function giftPanel() {
   const draft = readGiftDraft();
-  return `${heading('THE GIFT ATELIER', giftStep === 'people' ? 'Who’s the lucky one?' : giftStep === 'bottles' ? 'Chosen with thought.' : 'Make it theirs.', giftStep === 'wrap' ? 'One last look before it leaves your hands.' : '')}<nav class="gift-tabs" aria-label="Gift steps">${[['people','01 People'],['bottles','02 Bottles'],['wrap','03 Wrap & review']].map(([key,label]) => `<button data-gift-step="${key}" ${key === giftStep ? 'aria-current="step"' : ''}>${label}</button>`).join('')}</nav>${giftStep === 'people' ? peoplePanel(draft) : giftStep === 'bottles' ? giftBottlesPanel(draft) : wrappingPanel(draft)}`;
+  return `${heading('THE GIFT ATELIER', giftStep === 'people' ? 'The recipient.' : giftStep === 'bottles' ? 'The selection.' : 'Presentation & review.', giftStep === 'wrap' ? 'Review the details of each gift before checkout.' : '')}<nav class="gift-tabs" aria-label="Gift steps">${[['people','01 People'],['bottles','02 Bottles'],['wrap','03 Wrap & review']].map(([key,label]) => `<button data-gift-step="${key}" ${key === giftStep ? 'aria-current="step"' : ''}>${label}</button>`).join('')}</nav>${giftStep === 'people' ? peoplePanel(draft) : giftStep === 'bottles' ? giftBottlesPanel(draft) : wrappingPanel(draft)}`;
 }
 function helpPanel() {
-  return `${heading('MAKE YOURSELF AT HOME', 'Take a look around.')}<div class="help-copy"><p>On a computer, click “Step inside”, then use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or the arrow keys to walk. Hold and drag the scene to look around. Click a bottle to see its details.</p><p>On a phone, tap Cellar, Spirits, Gifting, or Checkout to move to that section. Choose bottles from the list.</p><p>The map and navigation buttons also work with a keyboard. The bottle list gives you access to every product without walking.</p><p>Your personal basket and gift selections stay separate. Gifts can have up to five recipients, each with their own bottles and message.</p><p>This is a concept preview. Checkout uses the existing Yodla checkout page.</p></div><div class="dialog-actions"><button class="primary" data-open="catalogue">Browse bottles ↗</button></div>`;
+  return `${heading('MAKE YOURSELF AT HOME', 'Take a look around.')}<div class="help-copy"><p>Click an open spot on the floor to move there. Hold and drag to look around, then click a bottle to see its details. No movement keys are required.</p><p>Use the map or section buttons for a direct route to the cellar, Gift Atelier, or checkout. On a phone, tap a section and select bottles from its list.</p><p>The map and navigation buttons also work with a keyboard. The bottle list gives you access to every product without walking.</p><p>Your personal basket and gift selections stay separate. Gifts can have up to five recipients, each with their own bottles and message.</p><p>This is a concept preview. Checkout uses the existing Yodla checkout page.</p></div><div class="dialog-actions"><button class="primary" data-open="catalogue">Browse bottles ↗</button></div>`;
 }
 function renderPanel() {
   const scroll = dialog.scrollTop;
@@ -147,8 +160,8 @@ function animatePack() {
 }
 function goGiftStep(step) {
   const draft = readGiftDraft();
-  if (step !== 'people' && giftDraftError(draft, false)) return toast('Add and save a recipient first.');
-  if (step === 'wrap' && giftDraftError(draft)) return toast(giftDraftError(draft));
+  if (step !== 'people' && giftDraftError(draft, false)) return toast('Add and save a recipient first.', 'error');
+  if (step === 'wrap' && giftDraftError(draft)) return toast(giftDraftError(draft), 'error');
   editingId = ''; giftStep = step; activePanel = 'gift'; renderPanel(); dialog.scrollTop = 0; $('#panel-title')?.focus({ preventScroll: true });
 }
 function addForGift(id) {
@@ -171,6 +184,17 @@ function trySaveGift(draft) {
 document.addEventListener('click', event => {
   const button = event.target.closest('button,a'); if (!button) return;
   const data = button.dataset;
+  if (button.hasAttribute('data-dismiss-notice')) { button.parentElement.hidden=true; return; }
+  if (button.hasAttribute('data-save-and-continue')) {
+    const form=$('#recipient-form');
+    const hasInput=form && [...form.elements].some(el=>el.name && String(el.value||'').trim());
+    if (form && (hasInput || !readGiftDraft().recipients.length)) {
+      pendingGiftStep='bottles';
+      if (!form.reportValidity()) {pendingGiftStep='';toast('Complete the recipient details before continuing.','error');return;}
+      form.requestSubmit();
+    } else goGiftStep('bottles');
+    return;
+  }
   if (data.visit) { visit(data.visit); return; }
   if (data.open) { if (data.open === 'catalogue') { filterQuery = ''; filterCategory = 'All'; } openPanel(data.open); return; }
   if (data.product) { openPanel('product', data.product); return; }
@@ -222,11 +246,12 @@ document.addEventListener('submit', event => {
   event.preventDefault();
   try {
     const result = addGiftRecipient({ ...Object.fromEntries(new FormData(event.target)), id: editingId || undefined });
-    if (!result.ok) { $('#recipient-status').textContent = result.error; return; }
+    if (!result.ok) { $('#recipient-status').textContent = result.error; pendingGiftStep=''; toast(result.error,'error'); return; }
     giftPerson = editingId || result.draft.recipients.at(-1).id; editingId = '';
     if (pendingGiftProduct) { const id = pendingGiftProduct; pendingGiftProduct = ''; addForGift(id); }
     renderPanel(); toast('Recipient saved.');
-  } catch { $('#recipient-status').textContent = 'Your gift could not be saved. Check that browser storage is enabled.'; }
+    if(pendingGiftStep){const next=pendingGiftStep;pendingGiftStep='';goGiftStep(next);}
+  } catch { pendingGiftStep=''; const message='Your gift could not be saved. Check that browser storage is enabled.'; if($('#recipient-status'))$('#recipient-status').textContent=message;toast(message,'error'); }
 }, events);
 $('#enter-store').addEventListener('click', enter, events);
 $('#help-button').addEventListener('click', () => openPanel('help'), events);
@@ -258,6 +283,7 @@ async function boot() {
     scene = createBoutique({ container: $('#scene'), products: PRODUCTS, reduceMotion: reduced,
       onSelect: id => { document.body.classList.add('entered'); $('#welcome').inert = true; openPanel('product', id); },
       onStation: arrive,
+      onMove: () => { document.body.classList.add('entered'); $('#welcome').inert=true; },
       onHover: label => { $('#scene-label').hidden = !label; $('#scene-label').textContent = label; },
       onPosition: (x,z) => { $('#map-you').style.left = `${(x + 7) / 14 * 100}%`; $('#map-you').style.top = `${(z + 10) / 20 * 100}%`; },
     });

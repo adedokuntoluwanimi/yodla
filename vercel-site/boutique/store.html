@@ -22,11 +22,11 @@
       </nav>
       <button class="basket-button" data-visit="checkout">Basket <span id="basket-count">0</span></button>
     </header>
-    <div class="store-address"><span class="status-dot"></span> YOUR PRIVATE CELLAR, ONLINE <span class="preview-label">CONCEPT PREVIEW</span></div>
+    <div class="store-address"><span class="status-dot"></span> WINE, SPIRITS & PERSONAL GIFTING <span class="preview-label">CONCEPT PREVIEW</span></div>
     <section class="welcome" id="welcome" aria-labelledby="welcome-title">
-      <span class="eyebrow">COME IN. TAKE YOUR TIME.</span>
-      <h1 id="welcome-title">Good taste.<br><i>Great company.</i></h1>
-      <p>A bottle for your evening.<br>A little something for someone else.<br>Find it here.</p>
+      <span class="eyebrow">THE YODLA CELLAR</span>
+      <h1 id="welcome-title">A considered<br><i>collection.</i></h1>
+      <p>Explore the cellar at your own pace.<br>Select a bottle for the table, or prepare a personal gift.</p>
       <button class="primary" id="enter-store">Step inside <span aria-hidden="true">↗</span></button>
       <button class="quiet" data-open="catalogue">Browse the bottle list</button>
     </section>
@@ -46,7 +46,7 @@
       <button class="map-list" data-open="catalogue">View bottle list <span aria-hidden="true">↗</span></button>
     </aside>
     <footer class="store-controls">
-      <p id="movement-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk <span>·</span> drag to look <span>·</span> click a bottle</p>
+      <p id="movement-hint">Click the floor to move <span>·</span> drag to look <span>·</span> select a bottle</p>
       <div><button id="motion-toggle" aria-pressed="false">Reduce motion</button><button id="help-button" aria-label="How to explore the boutique">?</button></div>
     </footer>
     <nav class="mobile-stations" aria-label="Tap to move around the boutique">
@@ -54,6 +54,7 @@
     </nav>
     <dialog id="store-dialog" aria-labelledby="panel-title">
       <div class="dialog-top"><a class="wordmark" href="/index.html">yodla</a><button class="close" id="close-panel" aria-label="Return to the store">×</button></div>
+      <div id="dialog-notice" class="dialog-notice" role="status" aria-live="polite" hidden></div>
       <div id="panel-content"></div>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

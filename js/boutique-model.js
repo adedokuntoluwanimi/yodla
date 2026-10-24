@@ -17,6 +17,7 @@ export const STATIONS = {
 };
 
 export function canStand(x, z, radius = .28) {
+  if (![x,z,radius].every(Number.isFinite) || radius < 0) return false;
   if (x < ROOM.minX + radius || x > ROOM.maxX - radius || z < ROOM.minZ + radius || z > ROOM.maxZ - radius) return false;
   return !OBSTACLES.some(b => x > b.minX - radius && x < b.maxX + radius && z > b.minZ - radius && z < b.maxZ + radius);
 }
@@ -34,6 +35,7 @@ export function moveWithCollision(position, dx, dz) {
 
 /** Find a furniture-safe route for tap navigation and map shortcuts. */
 export function routeToStation(start, end) {
+  if (!start || !end || !canStand(start.x,start.z) || !canStand(end.x,end.z)) return [];
   const clear = (a, b) => {
     const steps = Math.max(1, Math.ceil(Math.hypot(b.x-a.x, b.z-a.z) / .08));
     for (let i=0; i<=steps; i++) if (!canStand(a.x+(b.x-a.x)*i/steps, a.z+(b.z-a.z)*i/steps)) return false;

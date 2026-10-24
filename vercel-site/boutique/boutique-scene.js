@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
-import { moveWithCollision, routeToStation, STATIONS } from './boutique-model.js';
+import { moveWithCollision, routeToStation, canStand, STATIONS } from './boutique-model.js';
 
-export function createBoutique({ container, products, onSelect, onStation, onPosition, onHover, reduceMotion = false }) {
+export function createBoutique({ container, products, onSelect, onStation, onPosition, onHover, onMove, reduceMotion = false }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#30251d');
-  scene.fog = new THREE.FogExp2('#473529', .018);
+  scene.fog = new THREE.FogExp2('#30251f', .012);
   const camera = new THREE.PerspectiveCamera(58, 1, .08, 65);
   camera.position.set(0, 1.7, 8.6);
   camera.rotation.order = 'YXZ';
@@ -15,21 +15,20 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = .92;
   renderer.domElement.tabIndex = 0;
-  renderer.domElement.setAttribute('aria-label', 'Wine boutique. W A S D or arrow keys to walk. Drag to look. Use the navigation buttons to reach shelves and counters.');
+  renderer.domElement.setAttribute('aria-label', 'Wine boutique. Click the floor to move, drag to look, and click a bottle to choose it. Section buttons also work with Tab and Enter.');
   container.append(renderer.domElement);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const environmentScene = new RoomEnvironment();
   const environment = pmrem.fromScene(environmentScene, .04);
   scene.environment = environment.texture;
-  scene.environmentIntensity = .32;
+  scene.environmentIntensity = .58;
   environmentScene.dispose();
   pmrem.dispose();
   let reduced = reduceMotion, paused = false, entered = false, disposed = false;
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2(), interactives = [];
   const textures = [];
-  const keys = new Set();
   let yaw = 0, pitch = -.025, drag = null, travel = null, last = performance.now(), frame;
 
   function mapCanvas(width, height, painter) {
@@ -58,10 +57,18 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     }
   });
   const mat = (color, roughness = .6, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
-  const walnut = new THREE.MeshStandardMaterial({ color: '#624734', map: oakMap, roughness: .46 });
-  const floorMat = new THREE.MeshStandardMaterial({ color: '#b89b78', map: oakMap, roughness: .54 });
-  const plaster = mat('#c1b29a', .95), wine = mat('#491d2a', .7), brass = mat('#b89960', .32, .78);
-  const darkWood = mat('#38271e', .56), marble = new THREE.MeshStandardMaterial({ map: marbleMap, roughness: .32 });
+  const walnut = new THREE.MeshStandardMaterial({ color: '#624734', map: oakMap, bumpMap: oakMap, bumpScale:.025, roughness: .42 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: '#b89b78', map: oakMap, bumpMap: oakMap, bumpScale:.014, roughness: .43 });
+  const plasterMap = mapCanvas(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = '#b8ab96'; ctx.fillRect(0, 0, w, h);
+    for (let i=0; i<18000; i++) {
+      ctx.fillStyle = `rgba(${random() > .5 ? '225,215,194' : '72,62,49'},${random()*.055})`;
+      ctx.fillRect(random()*w, random()*h, 1+random()*2, 1+random()*2);
+    }
+  });
+  const plaster = new THREE.MeshStandardMaterial({map:plasterMap, bumpMap:plasterMap, bumpScale:.025, roughness:.92});
+  const wine = mat('#321823', .6), brass = mat('#987c4f', .38, .82);
+  const darkWood = mat('#38271e', .56), marble = new THREE.MeshStandardMaterial({ map: marbleMap, roughness: .2, metalness:.08 });
   const black = mat('#171715', .45), paper = mat('#eee0c7', .85);
   const glow = new THREE.MeshBasicMaterial({ color: '#ffe1a2' });
   const cream = mat('#d4c5ac', .8);
@@ -97,7 +104,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     matrix.makeTranslation(-6.76 + x * .52, -.005, -9.5 + z * 2.35 + (x % 2 ? .65 : 0));
     planks.setMatrixAt(plank, matrix); planks.setColorAt(plank++, new THREE.Color().setHSL(.08, .22, .53 + random() * .13));
   }
-  planks.receiveShadow = true; scene.add(planks);
+  planks.receiveShadow = true; planks.userData.walkable = true; scene.add(planks);
   box(.22, 4.8, 20, plaster, -7, 2.4, 0); box(.22, 4.8, 20, plaster, 7, 2.4, 0);
   box(14, 4.8, .2, plaster, 0, 2.4, -10); box(14, .18, 20, darkWood, 0, 4.5, 0);
   box(14, .24, .14, brass, 0, .13, -9.85);
@@ -202,31 +209,56 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   box(3.4, 1.02, 1.1, wine, 3.75, .51, -8.05);
   box(3.65, .12, 1.4, marble, 3.75, 1.08, -8.05);
   for (let i = 0; i < 17; i++) box(.04, .85, .045, brass, 2.2 + i * .19, .51, -7.48);
-  const giftSign = sign('THE GIFT ATELIER', 'CHOSEN BY YOU. WRAPPED WITH CARE.', 3.6, 2.65, -9.72, 4.4);
+  const giftSign = sign('THE GIFT ATELIER', 'PERSONAL GIFTING & PRESENTATION', 3.6, 2.65, -9.72, 3.7);
   giftSign.traverse(o => { if (o.isMesh) { o.userData.station = 'gifts'; interactives.push(o); } });
+  box(4.25, 3.65, .12, walnut, 3.65, 1.88, -9.84);
+  for (let i=0;i<7;i++) box(.012,3.55,.035,brass,1.7+i*.65,1.86,-9.75);
+  box(3.48,.035,1.27,brass,3.75,1.02,-8.05);
+  for (let i=0;i<3;i++) {
+    const seam=box(1.03,.025,.018, darkWood,2.6+i*1.13,.82,-7.482);
+    seam.receiveShadow=true;
+  }
   const giftBox = new THREE.Group(); giftBox.position.set(3.6, 1.15, -7.96); scene.add(giftBox);
   box(.94, .35, .6, cream, 0, .175, 0, giftBox);
-  const lid = box(1.01, .07, .66, wine, 0, .38, 0, giftBox);
+  const lid = box(.97, .045, .63, wine, 0, .375, 0, giftBox);
+  box(.91,.006,.57,mat('#6b4850',.85),0,.35,0,giftBox);
+  // Satin loops and folded ribbon tails, rather than a painted stripe.
+  const satin = new THREE.MeshPhysicalMaterial({color:'#bda57c',roughness:.48,metalness:.25,clearcoat:.25,side:THREE.DoubleSide});
+  for(const side of [-1,1]) {
+    const loop = new THREE.Mesh(new THREE.TorusGeometry(.1,.018,8,28),satin);
+    loop.scale.set(1.6,.7,1);loop.rotation.set(.55,side*.35,side*.25);loop.position.set(side*.12,.46,0);giftBox.add(loop);
+    const tail=box(.075,.008,.22,satin,side*.09,.411,.13,giftBox);tail.rotation.y=side*.38;
+  }
+  const plaque=textPanel('YODLA','',.24,.075,{background:'#321823',color:'#bda57c',fontSize:65});
+  plaque.position.set(0,.24,.306);giftBox.add(plaque);
   box(.11, .005, .66, brass, 0, .419, 0, giftBox);
   box(.11, .35, .012, brass, 0, .18, .31, giftBox);
   const giftTag = textPanel('For you', '', .33, .17, { background: '#f1e3c9', color: '#572637', fontSize: 58 });
-  giftTag.position.set(.35, .29, .32); giftBox.add(giftTag);
+  giftTag.position.set(.34, .24, .322); giftTag.rotation.z = -.13; giftBox.add(giftTag);
   giftBox.traverse(o => { if (o.isMesh) { o.userData.station = 'gifts'; interactives.push(o); } });
-  for (let i = 0; i < 3; i++) cylinder(.14, .14, .32, [wine, paper, brass][i], 4.6 + i * .25, 1.31, -8.3);
+  for (let i = 0; i < 3; i++) {
+    const roll=cylinder(.07,.07,.26,[wine,paper,brass][i],4.65+i*.18,1.23,-8.35);
+    roll.rotation.z=Math.PI/2;
+  }
+  cylinder(.12,.16,.025,brass,5,1.16,-8.18);
+  cylinder(.012,.012,.52,brass,5,1.43,-8.18);
+  const taskShade=new THREE.Mesh(new THREE.ConeGeometry(.18,.22,32,1,true),brass);
+  taskShade.position.set(5,1.7,-8.18);scene.add(taskShade);
+  const taskLight=new THREE.PointLight('#ffe4b9',5,3,2);taskLight.position.set(5,1.6,-8.18);scene.add(taskLight);
   box(.55, .015, .4, paper, 2.65, 1.16, -7.96);
   const scissors = box(.2, .015, .03, brass, 2.6, 1.18, -7.8); scissors.rotation.y = .5;
 
   // Pendant lights, warm wall wash, and soft daylight from the storefront.
-  const ambient = new THREE.HemisphereLight('#fff0d5', '#544333', 1.55); scene.add(ambient);
-  const keyLight = new THREE.DirectionalLight('#ffe4bd', 2.8); keyLight.position.set(1, 5, 8); keyLight.castShadow = true;
+  const ambient = new THREE.HemisphereLight('#ece4d5', '#30251e', .7); scene.add(ambient);
+  const keyLight = new THREE.DirectionalLight('#fff0d6', 2.1); keyLight.position.set(1, 5, 8); keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(2048, 2048); keyLight.shadow.camera.left = -9; keyLight.shadow.camera.right = 9;
   keyLight.shadow.camera.top = 11; keyLight.shadow.camera.bottom = -11; keyLight.shadow.normalBias = .035; scene.add(keyLight);
-  const backLight = new THREE.PointLight('#ffc98b', 60, 16, 2); backLight.position.set(0, 3.6, -7); scene.add(backLight);
+  const backLight = new THREE.PointLight('#ffd5a0', 32, 16, 2); backLight.position.set(0, 3.6, -7); scene.add(backLight);
   for (const z of [4.5, -1.6, -7]) for (const x of [-3, 3]) {
     cylinder(.018, .018, .65, brass, x, 4, z);
     const shade = new THREE.Mesh(new THREE.ConeGeometry(.43, .35, 32, 1, true), brass); shade.position.set(x, 3.55, z); scene.add(shade);
     cylinder(.32, .32, .025, glow, x, 3.39, z);
-    const light = new THREE.PointLight('#ffdda6', 20, 7, 2); light.position.set(x, 3.2, z); scene.add(light);
+    const light = new THREE.PointLight('#ffe0b0', 16, 7, 2); light.position.set(x, 3.2, z); scene.add(light);
   }
   // Botanical arrangement gives the limestone corner a softer edge.
   cylinder(.32, .25, .6, mat('#9c7856'), 5.55, .3, 6.9);
@@ -244,27 +276,30 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   }
   const observer = new ResizeObserver(resize); observer.observe(container); resize();
   function cast(event) {
+    if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return null;
     const rect = canvas.getBoundingClientRect(); pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObjects(interactives, false).find(h => h.distance < 9);
     // Furniture and walls occlude bottle hit targets.
     if (!hit) return null;
-    const occlusion = raycaster.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.productId && !h.object.userData.station);
+    const occlusion = raycaster.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.productId && !h.object.userData.station && !h.object.userData.overlay);
     return occlusion && occlusion.distance + .04 < hit.distance ? null : hit;
   }
   canvas.addEventListener('pointerdown', e => {
     if (paused) return;
-    canvas.focus({ preventScroll: true }); canvas.setPointerCapture(e.pointerId);
+    canvas.focus({ preventScroll: true }); if (Number.isInteger(e.pointerId)) canvas.setPointerCapture(e.pointerId);
     drag = { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, yaw, pitch, moved: false };
   }, eventOptions);
   canvas.addEventListener('pointermove', e => {
     if (paused) return;
-    if (drag && e.pointerType !== 'touch') {
+    if (drag) {
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       drag.moved ||= Math.hypot(dx, dy) > 5;
       if (drag.moved) { travel = null; yaw = drag.yaw - dx * .003; pitch = THREE.MathUtils.clamp(drag.pitch - dy * .002, -.55, .55); }
     } else if (!drag) {
-      const hit = cast(e); canvas.style.cursor = hit ? 'pointer' : 'grab';
+      const hit = cast(e); const floor = floorTarget(e); canvas.style.cursor = hit || floor ? 'pointer' : 'grab';
+      moveMarker.visible = Boolean(floor && !hit && entered);
+      if (floor) moveMarker.position.set(floor.x, .045, floor.z);
       const id = hit?.object.userData.productId;
       onHover?.(id ? products.find(p => p.id === id)?.name : hit?.object.userData.station ? STATIONS[hit.object.userData.station].label : '');
     }
@@ -277,33 +312,46 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const hit = cast(e);
     if (hit?.object.userData.productId) onSelect?.(hit.object.userData.productId);
     else if (hit?.object.userData.station) visit(hit.object.userData.station);
+    else { const floor = floorTarget(e); if (floor) moveTo(floor); }
   }, eventOptions);
   canvas.addEventListener('pointercancel', () => { drag = null; }, eventOptions);
-  canvas.addEventListener('keydown', e => {
-    if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key.toLowerCase()) || e.key.startsWith('Arrow')) {
-      e.preventDefault(); keys.add(e.key.toLowerCase()); travel = null;
-    }
-  }, eventOptions);
-  window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()), eventOptions);
-  window.addEventListener('blur', () => { keys.clear(); drag = null; }, eventOptions);
-  document.addEventListener('visibilitychange', () => { keys.clear(); last = performance.now(); }, eventOptions);
+  window.addEventListener('blur', () => { drag = null; }, eventOptions);
+  document.addEventListener('visibilitychange', () => { last = performance.now(); }, eventOptions);
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); pause(true); container.dispatchEvent(new CustomEvent('boutique-render-error')); }, eventOptions);
 
-  function visit(id) {
-    const station = STATIONS[id]; if (!station) return;
-    entered = true; keys.clear(); drag = null;
-    const target = new THREE.Vector3(...station.position), look = new THREE.Vector3(...station.look);
-    const direction = look.sub(target).normalize();
-    let targetYaw = Math.atan2(-direction.x, -direction.z);
-    targetYaw = yaw + THREE.MathUtils.euclideanModulo(targetYaw - yaw + Math.PI, Math.PI * 2) - Math.PI;
-    const targetPitch = Math.asin(direction.y);
-    if (reduced) { camera.position.copy(target); yaw = targetYaw; pitch = targetPitch; onStation?.(id); return; }
-    const route = routeToStation(camera.position, target);
-    if (!route.length) return;
-    const points = [camera.position.clone(), ...route.map(p => new THREE.Vector3(p.x, 1.7, p.z))];
-    travel = { id, points, index: 1, fromYaw: yaw, targetYaw, targetPitch, started: performance.now() };
+  const markerMaterial = new THREE.MeshBasicMaterial({color:'#c6ae84',transparent:true,opacity:.8,depthWrite:false});
+  const moveMarker = new THREE.Mesh(new THREE.RingGeometry(.18,.205,48),markerMaterial);
+  moveMarker.rotation.x=-Math.PI/2;moveMarker.visible=false;moveMarker.userData.overlay=true;scene.add(moveMarker);
+  function floorTarget(event) {
+    if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return null;
+    const rect=canvas.getBoundingClientRect();
+    pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
+    raycaster.setFromCamera(pointer,camera);
+    const hit=raycaster.intersectObject(planks,false)[0];
+    if(!hit || !canStand(hit.point.x,hit.point.z))return null;
+    const blocker=raycaster.intersectObjects(scene.children,true).find(h=>h.object.isMesh && !h.object.userData.overlay && !h.object.userData.walkable);
+    if(blocker && blocker.distance+.03<hit.distance)return null;
+    return hit.point;
   }
-  function pause(value) { paused = value; keys.clear(); drag = null; onHover?.(''); }
+  function moveTo(point, stationId='') {
+    entered=true;drag=null;moveMarker.visible=false;
+    const target = new THREE.Vector3(point.x,1.7,point.z);
+    const route=routeToStation(camera.position,target);
+    if(!route.length)return;
+    const station=STATIONS[stationId];
+    const look=station ? new THREE.Vector3(...station.look) : target.clone().add(new THREE.Vector3(target.x-camera.position.x,0,target.z-camera.position.z));
+    const direction=look.sub(target).normalize();
+    let targetYaw = direction.lengthSq() ? Math.atan2(-direction.x,-direction.z) : yaw;
+    targetYaw=yaw+THREE.MathUtils.euclideanModulo(targetYaw-yaw+Math.PI,Math.PI*2)-Math.PI;
+    const targetPitch=station ? Math.asin(direction.y) : -.025;
+    onMove?.();
+    if(reduced) {travel=null;camera.position.copy(target);yaw=targetYaw;pitch=targetPitch;if(stationId)onStation?.(stationId);return;}
+    travel={id:stationId,points:[camera.position.clone(),...route.map(p=>new THREE.Vector3(p.x,1.7,p.z))],index:1,targetYaw,targetPitch};
+  }
+  function visit(id) {
+    const station=STATIONS[id];if(station)moveTo(new THREE.Vector3(...station.position),id);
+  }
+  function pause(value) {paused=value;drag=null;moveMarker.visible=false;onHover?.('');}
   function tick(now) {
     if (disposed) return;
     frame = requestAnimationFrame(tick);
@@ -315,7 +363,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
         const step = dt * 5.2;
         if (distance <= step) {
           camera.position.copy(destination); travel.index++;
-          if (travel.index >= travel.points.length) { const id = travel.id; yaw = travel.targetYaw; pitch = travel.targetPitch; travel = null; onStation?.(id); }
+          if (travel.index >= travel.points.length) { const id = travel.id; yaw = travel.targetYaw; pitch = travel.targetPitch; travel = null; if (id) onStation?.(id); }
         } else {
           const next = camera.position.clone().lerp(destination, step / distance);
           const allowed = moveWithCollision(camera.position, next.x - camera.position.x, next.z - camera.position.z);
@@ -323,12 +371,6 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
           yaw += (travel.targetYaw - yaw) * Math.min(1, dt * 3); pitch += (travel.targetPitch - pitch) * Math.min(1, dt * 3);
 
         }
-      } else if (entered && !matchMedia('(pointer: coarse)').matches) {
-        const forward = Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
-        const side = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'));
-        const factor = dt * 2.7 / Math.max(1, Math.hypot(forward, side));
-        const next = moveWithCollision(camera.position, (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * factor, (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * factor);
-        camera.position.x = next.x; camera.position.z = next.z;
       }
       if (!reduced && !entered) { yaw = Math.sin(now * .0001) * .018; }
     }
@@ -340,7 +382,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   return {
     visit, pause,
     enter() { entered = true; canvas.focus({ preventScroll: true }); visit('entrance'); },
-    setReducedMotion(value) { reduced = value; if (value && travel) { const id = travel.id; travel = null; visit(id); } },
+    setReducedMotion(value) { reduced = value; if (value && travel) { const end=travel.points.at(-1);const id=travel.id;travel=null;moveTo(end,id); } },
     dispose() {
       disposed = true; cancelAnimationFrame(frame); observer.disconnect(); abort.abort();
       const geometries = new Set(), materials = new Set();

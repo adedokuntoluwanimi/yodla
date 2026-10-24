@@ -6,7 +6,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const site = join(root, "vercel-site");
 const output = join(site, "dist");
 const pages = ["index", "gifting", "shop", "product", "bag", "checkout", "journal", "blog", "account", "login", "contact", "help", "404"];
-const version = "boutique-1";
+const version = "boutique-2";
 
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
@@ -34,7 +34,7 @@ for (const file of ["three.module.js", "three.core.js"]) {
 }
 cpSync(join(root, "node_modules", "three", "examples", "jsm", "environments", "RoomEnvironment.js"), join(output, "js", "vendor", "three", "RoomEnvironment.js"));
 cpSync(join(root, "node_modules", "three", "LICENSE"), join(output, "js", "vendor", "three", "LICENSE.txt"));
-for (const file of ["boutique.js", "boutique-scene.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
+for (const file of ["boutique.js", "boutique-scene.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
 cpSync(join(site, "boutique", "boutique.css"), join(output, "css", "boutique.css"));
 
 for (const name of pages) {
