@@ -43,3 +43,13 @@ node --check vercel-site/boutique/boutique-scene.js
 Automated checks cover furniture collision, every station-to-station route, five-recipient persistence and removal, independent assignments, stock changes, server totals, and recipient message limits. Browser checks covered the non-WebGL catalogue, personal basket, recipient save, bottle assignment, wrapping, and gift-checkout summary, plus the 390px responsive layout.
 
 The available QA browser disables WebGL. Review lighting, camera framing, bottle picking, movement feel, and performance in a browser with WebGL enabled before release. Real touch-device input and payment completion remain unverified. No payment or email was sent during testing.
+
+## Counter and mobile review update
+
+Nneka hosts gifting and Daniel hosts checkout. The 3D staff have name badges and articulated arms. Responsive SVG preparation scenes use the selected products and attach the recipient, message, and delivery details to the gift; checkout adds the selected lines and total to its receipt. Preparation supports replay, direct stage selection, instant completion, and reduced motion. Yodla’s supplied wordmark appears in the store, on counters, bags, and cards. Interface symbols use SVG.
+
+Optional music is an original browser-synthesised ambient sequence. It starts only on the visitor’s explicit request, includes a volume control, and suspends while the page is hidden.
+
+Mobile improvements include sticky actions, compact saved recipients, preservation of unfinished recipient details during navigation, bottle search, stable focus/scroll when quantities change, guidance to recipients with missing bottles, and confirmation before removing recipients. The final checkout makes preparation optional, hides the floating bag and concierge launchers, offers Ask Yodla in normal page flow, and no longer opens the handoff drawer automatically.
+
+QA used desktop and a 390-by-667 CSS viewport, including recipient entry, missing-bottle guidance, personalisation, wrapping, and checkout. WebGL remains disabled in the available QA browser, so physical staff appearance, 3D picking, and camera feel need a WebGL-enabled device review. Touch gestures, an actual phone keyboard, and subjective music quality have not been device-tested.

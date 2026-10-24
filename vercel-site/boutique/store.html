@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="description" content="Step inside the Yodla boutique. Browse the cellar, choose a bottle, or make a personal gift in the Gift Atelier.">
   <meta name="robots" content="noindex,nofollow">
   <title>Yodla · The Boutique</title>
   <link rel="icon" href="/favicon.png">
-  <link rel="stylesheet" href="/css/boutique.css">
+  <link rel="stylesheet" href="/css/boutique.css"><link rel="stylesheet" href="/css/boutique-counter.css">
   <script type="importmap">{"imports":{"three":"/js/vendor/three/three.module.js"}}</script>
 </head>
 <body>
@@ -15,7 +15,7 @@
     <div id="scene" aria-label="Interactive wine boutique"></div>
     <div class="scene-vignette" aria-hidden="true"></div>
     <header class="store-header">
-      <a class="wordmark" href="/index.html" aria-label="Yodla boutique entrance">yodla<span>THE BOUTIQUE</span></a>
+      <a class="wordmark" href="/index.html" aria-label="Yodla boutique entrance"><img class="brand-logo brand-logo--light" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"><span>THE BOUTIQUE</span></a>
       <nav aria-label="Store navigation">
         <button data-visit="wines">The cellar</button>
         <button data-visit="gifts">Gift Atelier <span aria-hidden="true">↗</span></button>
@@ -31,7 +31,7 @@
       <button class="quiet" data-open="catalogue">Browse the bottle list</button>
     </section>
     <div id="loading" class="loading" role="status">Preparing the cellar…</div>
-    <div id="scene-label" class="scene-label" hidden></div>
+    <p id="travel-status" class="travel-status" role="status" aria-live="polite"></p><span id="catalogue-note" class="sr-only"></span><div id="scene-label" class="scene-label" hidden></div>
     <div class="store-location" id="store-location"><span>01 / THE ENTRANCE</span><small>A little time. A good bottle.</small></div>
     <aside class="store-map" aria-label="Boutique map">
       <span class="eyebrow">FIND YOUR WAY</span>
@@ -47,15 +47,15 @@
     </aside>
     <footer class="store-controls">
       <p id="movement-hint">Click the floor to move <span>·</span> drag to look <span>·</span> select a bottle</p>
-      <div><button id="motion-toggle" aria-pressed="false">Reduce motion</button><button id="help-button" aria-label="How to explore the boutique">?</button></div>
+      <div><button id="music-toggle" aria-pressed="false" aria-label="Toggle calm background music"><span>Sound off</span></button><button id="motion-toggle" aria-pressed="false">Reduce motion</button><button id="help-button" aria-label="How to explore the boutique">?</button></div>
     </footer>
     <nav class="mobile-stations" aria-label="Tap to move around the boutique">
       <button data-visit="wines">Cellar</button><button data-visit="spirits">Spirits</button><button data-visit="gifts">Gifting</button><button data-visit="checkout">Checkout</button>
     </nav>
     <dialog id="store-dialog" aria-labelledby="panel-title">
-      <div class="dialog-top"><a class="wordmark" href="/index.html">yodla</a><button class="close" id="close-panel" aria-label="Return to the store">×</button></div>
+      <div class="dialog-top"><button id="panel-back" class="panel-back" aria-label="Go back" hidden>Back</button><a class="wordmark" href="/index.html" aria-label="Yodla boutique"><img class="brand-logo" src="/assets/brand/yodla-wordmark.svg" alt="Yodla"></a><button class="close" id="close-panel" aria-label="Return to the store">×</button></div>
       <div id="dialog-notice" class="dialog-notice" role="status" aria-live="polite" hidden></div>
-      <div id="panel-content"></div>
+      <div id="panel-content"></div><div class="dialog-settings"><label for="music-volume">Music volume<input id="music-volume" type="range" min="0" max="0.1" step="0.005" value="0.035"></label></div>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
     <noscript><div class="no-script">The interactive boutique requires JavaScript. <a href="/bag.html">Open your basket</a> or <a href="/help.html">get help with your order</a>.</div></noscript>

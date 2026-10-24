@@ -34,8 +34,9 @@ for (const file of ["three.module.js", "three.core.js"]) {
 }
 cpSync(join(root, "node_modules", "three", "examples", "jsm", "environments", "RoomEnvironment.js"), join(output, "js", "vendor", "three", "RoomEnvironment.js"));
 cpSync(join(root, "node_modules", "three", "LICENSE"), join(output, "js", "vendor", "three", "LICENSE.txt"));
-for (const file of ["boutique.js", "boutique-scene.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
+for (const file of ["boutique.js", "boutique-scene.js", "boutique-icons.js", "boutique-counter.js", "boutique-music.js", "boutique-checkout.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
 cpSync(join(site, "boutique", "boutique.css"), join(output, "css", "boutique.css"));
+cpSync(join(site, "boutique", "boutique-counter.css"), join(output, "css", "boutique-counter.css"));
 
 for (const name of pages) {
   if (["index", "shop", "gifting"].includes(name)) {
@@ -66,6 +67,7 @@ for (const name of pages) {
   html = html.replace("</head>", '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet"></head>');
   html = html.replace("</head>", `<link rel="icon" href="/favicon.png" type="image/png"><link rel="stylesheet" href="/css/gift-club.css?v=${version}"></head>`);
   html = html.replace("</body>", `<script type="module" src="/js/experience.js?v=${version}"></script></body>`);
+  if (name === "checkout") html = html.replace("</head>", '<link rel="stylesheet" href="/css/boutique-counter.css"></head>').replace("</body>", '<script type="module" src="/js/boutique-checkout.js"></script></body>');
   writeFileSync(join(output, `${name}.html`), html);
 }
 

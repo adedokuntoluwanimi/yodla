@@ -1682,7 +1682,7 @@ async function boot() {
   updateFabElevate();
   window.addEventListener("scroll", updateFabElevate, { passive: true });
   window.addEventListener("resize", updateFabElevate);
-  if (page === "checkout" && !paymentReturn && !isGiftCheckout() && state.cart.length) window.setTimeout(showHandoff, 600);
+  // Checkout already shows delivery fields and its order review; leave optional help closed.
   window.requestAnimationFrame(startPageMotion);
 }
 

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
 import { moveWithCollision, routeToStation, canStand, STATIONS } from './boutique-model.js';
 
-export function createBoutique({ container, products, onSelect, onStation, onPosition, onHover, onMove, reduceMotion = false }) {
+export function createBoutique({ container, products, onSelect, onStation, onPosition, onHover, onMove, onTravel, reduceMotion = false }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#30251d');
   scene.fog = new THREE.FogExp2('#30251f', .012);
@@ -14,6 +14,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = .92;
   renderer.domElement.tabIndex = 0;
@@ -29,7 +30,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   let reduced = reduceMotion, paused = false, entered = false, disposed = false;
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2(), interactives = [];
   const textures = [];
-  let yaw = 0, pitch = -.025, drag = null, travel = null, last = performance.now(), frame;
+  let yaw = 0, pitch = -.025, drag = null, travel = null, last = performance.now(), lastRender=0, frame;
 
   function mapCanvas(width, height, painter) {
     const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
@@ -231,8 +232,8 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   }
   const plaque=textPanel('YODLA','',.24,.075,{background:'#321823',color:'#bda57c',fontSize:65});
   plaque.position.set(0,.24,.306);giftBox.add(plaque);
-  box(.11, .005, .66, brass, 0, .419, 0, giftBox);
-  box(.11, .35, .012, brass, 0, .18, .31, giftBox);
+  const giftRibbonTop=box(.11, .005, .66, brass, 0, .419, 0, giftBox);
+  const giftRibbonFront=box(.11, .35, .012, brass, 0, .18, .31, giftBox);
   const giftTag = textPanel('For you', '', .33, .17, { background: '#f1e3c9', color: '#572637', fontSize: 58 });
   giftTag.position.set(.34, .24, .322); giftTag.rotation.z = -.13; giftBox.add(giftTag);
   giftBox.traverse(o => { if (o.isMesh) { o.userData.station = 'gifts'; interactives.push(o); } });
@@ -248,10 +249,51 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   box(.55, .015, .4, paper, 2.65, 1.16, -7.96);
   const scissors = box(.2, .015, .03, brass, 2.6, 1.18, -7.8); scissors.rotation.y = .5;
 
+  const cashierRig={};
+  function addCashier(mode,name,x,z,rotation=0){
+    const host=new THREE.Group();host.position.set(x,0,z);host.rotation.y=rotation;scene.add(host);
+    const skin=mat(mode==='gift'?'#8b5c41':'#75503c',.75),shirt=mat('#d7cebc',.9),apron=mat('#321923',.8),hair=mat('#221c18',.9);
+    function sphere(rx,ry,rz,material,px,py,pz,parent=host){const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),material);mesh.scale.set(rx,ry,rz);mesh.position.set(px,py,pz);mesh.castShadow=true;parent.add(mesh);return mesh;}
+    sphere(.27,.37,.16,shirt,0,1.15,0);
+    box(.4,.5,.05,apron,0,1.11,.145,host);
+    for(const side of [-1,1]){const strap=box(.035,.28,.025,apron,side*.13,1.42,.145,host);strap.rotation.z=side*.2;}
+    cylinder(.065,.07,.15,skin,0,1.53,0,host);
+    sphere(.135,.18,.12,skin,0,1.75,.005);
+    sphere(.14,.1,.13,hair,0,1.85,-.01);
+    if(mode==='gift')sphere(.11,.11,.09,hair,-.09,1.94,-.05);
+    sphere(.029,.05,.025,skin,-.136,1.74,0);sphere(.029,.05,.025,skin,.136,1.74,0);
+    sphere(.022,.026,.032,skin,0,1.73,.118);
+    for(const side of [-1,1]){
+      sphere(.012,.009,.007,black,side*.049,1.78,.112);
+      const brow=box(.04,.008,.009,hair,side*.05,1.804,.111,host);brow.rotation.z=-side*.08;
+    }
+    const mouth=new THREE.Mesh(new THREE.TorusGeometry(.031,.003,6,16,Math.PI),mat('#4f2c29',.8));mouth.rotation.z=Math.PI;mouth.position.set(0,1.68,.112);host.add(mouth);
+    const tag=textPanel(name,'YODLA',.19,.075,{background:'#e7d9bc',color:'#3b1e27',fontSize:73});tag.position.set(.035,1.35,.184);host.add(tag);
+    const arms=[];
+    for(const side of [-1,1]){
+      const shoulder=new THREE.Group();shoulder.position.set(side*.25,1.4,0);host.add(shoulder);
+      const upper=cylinder(.065,.057,.29,shirt,0,-.12,0,shoulder,16);upper.rotation.z=side*.12;
+      const elbow=new THREE.Group();elbow.position.set(0,-.26,0);shoulder.add(elbow);
+      cylinder(.045,.04,.29,skin,0,-.12,0,elbow,14);sphere(.055,.07,.03,skin,0,-.27,0,elbow);
+      shoulder.rotation.x=-.55;shoulder.rotation.z=side*.18;elbow.rotation.x=-.9;
+      arms.push({shoulder,elbow,side});
+    }
+    for(const side of [-1,1])cylinder(.085,.07,.7,black,side*.11,.4,0,host,16);
+    const detail=textPanel('Ready for you','',.4,.15,{background:'#f2e6cf',color:'#4d2b27',fontSize:40});detail.position.set(x,1.38,z+(rotation?-.65:.65));detail.rotation.y=rotation;scene.add(detail);
+    cashierRig[mode]={host,arms,detail,action:0,phase:0};
+  }
+  addCashier('gift','Nneka',3.4,-8.9);
+  addCashier('checkout','Daniel',-4,5.7,Math.PI);
+  const logoTexture=new THREE.TextureLoader().load('/assets/brand/yodla-wordmark-4096-white.png');logoTexture.colorSpace=THREE.SRGBColorSpace;textures.push(logoTexture);
+  for(const [x,z,rotation] of [[3.75,-7.484,0],[-3.95,4.263,Math.PI]]){
+    const logo=new THREE.Mesh(new THREE.PlaneGeometry(.85,.19),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,depthWrite:false}));logo.position.set(x,.58,z);logo.rotation.y=rotation;scene.add(logo);
+  }
+
   // Pendant lights, warm wall wash, and soft daylight from the storefront.
   const ambient = new THREE.HemisphereLight('#ece4d5', '#30251e', .7); scene.add(ambient);
   const keyLight = new THREE.DirectionalLight('#fff0d6', 2.1); keyLight.position.set(1, 5, 8); keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048); keyLight.shadow.camera.left = -9; keyLight.shadow.camera.right = 9;
+  const shadowSize=matchMedia('(pointer: coarse)').matches?1024:2048;
+  keyLight.shadow.mapSize.set(shadowSize,shadowSize); keyLight.shadow.camera.left = -9; keyLight.shadow.camera.right = 9;
   keyLight.shadow.camera.top = 11; keyLight.shadow.camera.bottom = -11; keyLight.shadow.normalBias = .035; scene.add(keyLight);
   const backLight = new THREE.PointLight('#ffd5a0', 32, 16, 2); backLight.position.set(0, 3.6, -7); scene.add(backLight);
   for (const z of [4.5, -1.6, -7]) for (const x of [-3, 3]) {
@@ -295,7 +337,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     if (drag) {
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       drag.moved ||= Math.hypot(dx, dy) > 5;
-      if (drag.moved) { travel = null; yaw = drag.yaw - dx * .003; pitch = THREE.MathUtils.clamp(drag.pitch - dy * .002, -.55, .55); }
+      if (drag.moved) { travel = null; onTravel?.(false); yaw = drag.yaw - dx * .003; pitch = THREE.MathUtils.clamp(drag.pitch - dy * .002, -.55, .55); }
     } else if (!drag) {
       const hit = cast(e); const floor = floorTarget(e); canvas.style.cursor = hit || floor ? 'pointer' : 'grab';
       moveMarker.visible = Boolean(floor && !hit && entered);
@@ -346,7 +388,16 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const targetPitch=station ? Math.asin(direction.y) : -.025;
     onMove?.();
     if(reduced) {travel=null;camera.position.copy(target);yaw=targetYaw;pitch=targetPitch;if(stationId)onStation?.(stationId);return;}
-    travel={id:stationId,points:[camera.position.clone(),...route.map(p=>new THREE.Vector3(p.x,1.7,p.z))],index:1,targetYaw,targetPitch};
+    const points=[camera.position.clone(),...route.map(p=>new THREE.Vector3(p.x,1.7,p.z))];
+    const unique=points.filter((p,i)=>!i || p.distanceTo(points[i-1])>.01);
+    if(unique.length<2){camera.position.copy(target);yaw=targetYaw;pitch=targetPitch;if(stationId)onStation?.(stationId);onTravel?.(false);return;}
+    let curve=new THREE.CatmullRomCurve3(unique,false,'catmullrom',.12);
+    if(!curve.getPoints(160).every(p=>canStand(p.x,p.z)))curve=new THREE.CurvePath();
+    if(curve instanceof THREE.CurvePath)for(let i=1;i<unique.length;i++)curve.add(new THREE.LineCurve3(unique[i-1],unique[i]));
+    const distance=curve.getLength();
+    travel={id:stationId,curve,elapsed:0,duration:Math.max(.9,Math.min(6,distance/2.7)),fromYaw:yaw,fromPitch:pitch,targetYaw,targetPitch};
+    onTravel?.(true);
+
   }
   function visit(id) {
     const station=STATIONS[id];if(station)moveTo(new THREE.Vector3(...station.position),id);
@@ -358,31 +409,51 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const dt = Math.min((now - last) / 1000, .04); last = now;
     if (document.hidden) return;
     if (!paused) {
-      if (travel) {
-        const destination = travel.points[travel.index]; const distance = camera.position.distanceTo(destination);
-        const step = dt * 5.2;
-        if (distance <= step) {
-          camera.position.copy(destination); travel.index++;
-          if (travel.index >= travel.points.length) { const id = travel.id; yaw = travel.targetYaw; pitch = travel.targetPitch; travel = null; if (id) onStation?.(id); }
-        } else {
-          const next = camera.position.clone().lerp(destination, step / distance);
-          const allowed = moveWithCollision(camera.position, next.x - camera.position.x, next.z - camera.position.z);
-          camera.position.set(allowed.x, 1.7, allowed.z);
-          yaw += (travel.targetYaw - yaw) * Math.min(1, dt * 3); pitch += (travel.targetPitch - pitch) * Math.min(1, dt * 3);
-
-        }
+      if(travel){
+        travel.elapsed=Math.min(travel.duration,travel.elapsed+dt);
+        const t=travel.elapsed/travel.duration,ease=t*t*t*(t*(t*6-15)+10);
+        const position=travel.curve.getPointAt(ease);camera.position.copy(position);
+        yaw=THREE.MathUtils.lerp(travel.fromYaw,travel.targetYaw,ease);pitch=THREE.MathUtils.lerp(travel.fromPitch,travel.targetPitch,ease);
+        if(t>=1){const id=travel.id;travel=null;onTravel?.(false);if(id)onStation?.(id);}
       }
       if (!reduced && !entered) { yaw = Math.sin(now * .0001) * .018; }
     }
+    const giftPhase=cashierRig.gift.phase;
+    lid.position.y=THREE.MathUtils.damp(lid.position.y,giftPhase>0 && giftPhase<.5?.72:.375,6,dt);
+    giftTag.visible=giftPhase===0 || giftPhase>=.75;
+    giftRibbonTop.visible=giftRibbonFront.visible=giftPhase===0 || (giftPhase>=.5 && cashierRig.gift.wrap!==false);
+    for(const rig of Object.values(cashierRig)){
+      rig.action=THREE.MathUtils.damp(rig.action,rig.phase,5,dt);
+      rig.arms.forEach(({shoulder,elbow,side})=>{
+        const busy=rig.action>0 && rig.action<.98;
+        shoulder.rotation.x=-.55-rig.action*.25+(busy?Math.sin(now*.003+side)*.08:0);
+        shoulder.rotation.z=side*(.18-rig.action*.16);
+        elbow.rotation.x=-.9-rig.action*.45;
+      });
+    }
     camera.rotation.set(pitch, yaw, 0);
     onPosition?.(camera.position.x, camera.position.z);
-    renderer.render(scene, camera);
+    const frameInterval=matchMedia('(pointer: coarse)').matches?1000/30:1000/60;
+    if(now-lastRender>=frameInterval){renderer.render(scene,camera);lastRender=now;}
   }
   frame = requestAnimationFrame(tick);
   return {
     visit, pause,
+    setCounterAction(mode,progress,details={}){
+      const rig=cashierRig[mode];if(!rig)return;rig.phase=progress;rig.wrap=details.wrap;renderer.shadowMap.needsUpdate=true;
+      if(progress>=.75){
+        const name=details.person?.name || details.person?.firstName || (mode==='gift'?'Your gift':'Your selection');
+        const previous=rig.detail.material.map;
+        const next=textPanel(name,'PREPARED BY '+(mode==='gift'?'NNEKA':'DANIEL'),.4,.15,{background:'#f2e6cf',color:'#4d2b27',fontSize:40});
+        if(mode==='gift'){
+          const label=textPanel('For '+name,String(details.message||'').slice(0,42),.33,.17,{background:'#f1e3c9',color:'#572637',fontSize:50});
+          const oldLabel=giftTag.material.map;giftTag.material.map=label.material.map;giftTag.material.needsUpdate=true;oldLabel?.dispose();label.geometry.dispose();label.material.dispose();
+        }
+        rig.detail.material.map=next.material.map;rig.detail.material.needsUpdate=true;previous?.dispose();next.geometry.dispose();next.material.dispose();
+      }
+    },
     enter() { entered = true; canvas.focus({ preventScroll: true }); visit('entrance'); },
-    setReducedMotion(value) { reduced = value; if (value && travel) { const end=travel.points.at(-1);const id=travel.id;travel=null;moveTo(end,id); } },
+    setReducedMotion(value) { reduced = value; if (value && travel) { const end=travel.curve.getPointAt(1);const id=travel.id;travel=null;moveTo(end,id); } },
     dispose() {
       disposed = true; cancelAnimationFrame(frame); observer.disconnect(); abort.abort();
       const geometries = new Set(), materials = new Set();
