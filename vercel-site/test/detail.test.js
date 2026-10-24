@@ -32,7 +32,10 @@ test("Vercel output contains the customer experience and excludes admin code", (
   for (const name of ["admin", "assets/uploads", "js/concierge-api.js"]) assert.equal(existsSync(join(output, name)), false, `${name} must stay private`);
   const home = readFileSync(join(output, "index.html"), "utf8");
   const gifting = readFileSync(join(output, "gifting.html"), "utf8");
-  assert.match(home, /Pip the gift box and Dot the note/);
-  assert.match(gifting, /data-gift-preview-person/);
-  assert.match(gifting, /data-gift-panel="3"/);
+  assert.match(home, /id="scene"/);
+  assert.match(home, /boutique.js/);
+  assert.equal(existsSync(join(output, "js/vendor/three/three.core.js")), true);
+  assert.equal(existsSync(join(output, "css/boutique.css")), true);
+  assert.match(gifting, /Gift Atelier/);
+  assert.match(gifting, /id="store-dialog"/);
 });

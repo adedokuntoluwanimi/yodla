@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Step inside the Yodla boutique. Browse the cellar, choose a bottle, or make a personal gift in the Gift Atelier.">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Yodla · The Boutique</title>
+  <link rel="icon" href="/favicon.png">
+  <link rel="stylesheet" href="/css/boutique.css">
+  <script type="importmap">{"imports":{"three":"/js/vendor/three/three.module.js"}}</script>
+</head>
+<body>
+  <main id="boutique">
+    <div id="scene" aria-label="Interactive wine boutique"></div>
+    <div class="scene-vignette" aria-hidden="true"></div>
+    <header class="store-header">
+      <a class="wordmark" href="/index.html" aria-label="Yodla boutique entrance">yodla<span>THE BOUTIQUE</span></a>
+      <nav aria-label="Store navigation">
+        <button data-visit="wines">The cellar</button>
+        <button data-visit="gifts">Gift Atelier <span aria-hidden="true">↗</span></button>
+      </nav>
+      <button class="basket-button" data-visit="checkout">Basket <span id="basket-count">0</span></button>
+    </header>
+    <div class="store-address"><span class="status-dot"></span> YOUR PRIVATE CELLAR, ONLINE <span class="preview-label">CONCEPT PREVIEW</span></div>
+    <section class="welcome" id="welcome" aria-labelledby="welcome-title">
+      <span class="eyebrow">COME IN. TAKE YOUR TIME.</span>
+      <h1 id="welcome-title">Good taste.<br><i>Great company.</i></h1>
+      <p>A bottle for your evening.<br>A little something for someone else.<br>Find it here.</p>
+      <button class="primary" id="enter-store">Step inside <span aria-hidden="true">↗</span></button>
+      <button class="quiet" data-open="catalogue">Browse the bottle list</button>
+    </section>
+    <div id="loading" class="loading" role="status">Preparing the cellar…</div>
+    <div id="scene-label" class="scene-label" hidden></div>
+    <div class="store-location" id="store-location"><span>01 / THE ENTRANCE</span><small>A little time. A good bottle.</small></div>
+    <aside class="store-map" aria-label="Boutique map">
+      <span class="eyebrow">FIND YOUR WAY</span>
+      <div class="map-plan">
+        <button data-visit="gifts" class="map-gifts" aria-label="Go to Gift Atelier">Gift Atelier ↗</button>
+        <button data-visit="wines" class="map-wines" aria-label="Go to wine shelves">Wines</button>
+        <span class="map-island" aria-hidden="true"></span>
+        <button data-visit="spirits" class="map-spirits" aria-label="Go to spirits shelves">Spirits</button>
+        <button data-visit="checkout" class="map-checkout" aria-label="Go to checkout">Checkout</button>
+        <span class="map-you" id="map-you" aria-hidden="true"></span>
+      </div>
+      <button class="map-list" data-open="catalogue">View bottle list <span aria-hidden="true">↗</span></button>
+    </aside>
+    <footer class="store-controls">
+      <p id="movement-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk <span>·</span> drag to look <span>·</span> click a bottle</p>
+      <div><button id="motion-toggle" aria-pressed="false">Reduce motion</button><button id="help-button" aria-label="How to explore the boutique">?</button></div>
+    </footer>
+    <nav class="mobile-stations" aria-label="Tap to move around the boutique">
+      <button data-visit="wines">Cellar</button><button data-visit="spirits">Spirits</button><button data-visit="gifts">Gifting</button><button data-visit="checkout">Checkout</button>
+    </nav>
+    <dialog id="store-dialog" aria-labelledby="panel-title">
+      <div class="dialog-top"><a class="wordmark" href="/index.html">yodla</a><button class="close" id="close-panel" aria-label="Return to the store">×</button></div>
+      <div id="panel-content"></div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <noscript><div class="no-script">The interactive boutique requires JavaScript. <a href="/bag.html">Open your basket</a> or <a href="/help.html">get help with your order</a>.</div></noscript>
+  </main>
+  <script type="module" src="/js/boutique.js"></script>
+</body>
+</html>

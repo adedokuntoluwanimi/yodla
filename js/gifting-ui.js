@@ -58,7 +58,7 @@ export function giftReviewHtml(draft = readGiftDraft()) {
     const lines = draft.items.filter((item) => item.recipientId === person.id);
     return `<article class="gift-review-person">
       <div class="gift-person-heading"><h3>${esc(person.name)}</h3><span>${esc(person.state)}</span></div>
-      <p>${esc(person.address)}<br>${esc(person.email)}<br>${esc(person.phone)}${person.note ? `<br><em>${esc(person.note)}</em>` : ""}</p>
+      <p>${esc(person.address)}<br>${esc(person.email)}<br>${esc(person.phone)}${person.note ? `<br><em>Courier: ${esc(person.note)}</em>` : ""}${person.message ? `<br><em>Personal message: ${esc(person.message)}</em>` : ""}</p>
       <ul>${lines.map((item) => {
         const product = getProduct(item.productId);
         return `<li><span>${esc(product?.name || "Unavailable bottle")} <small>× ${item.quantity}</small></span><b>${money((product?.price || 0) * item.quantity)}</b></li>`;

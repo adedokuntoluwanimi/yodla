@@ -28,6 +28,7 @@ export const GIFT_SLIDES = ["ribbon", "note", "selection", "finished"].map((name
 export function normalizeDraft(raw = {}) {
   const recipients = (Array.isArray(raw.recipients) ? raw.recipients : []).slice(0, 5).map((person, index) => ({
     ...person,
+    message: String(person.message || "").slice(0, 500),
     id: person.id || `legacy-${index}-${person.email}`,
     firstName: person.firstName || String(person.name || "").split(" ")[0],
     lastName: person.lastName || String(person.name || "").split(" ").slice(1).join(" "),
@@ -113,7 +114,7 @@ export function addGiftRecipient(data) {
   const draft = readGiftDraft();
   const person = {
     ...data,
-    id: data.id || crypto.randomUUID(),
+    id: data.id || (crypto.randomUUID?.() || `gift-${Array.from(crypto.getRandomValues(new Uint8Array(16)), (n) => n.toString(16).padStart(2, "0")).join("")}`),
     email: String(data.email || "").trim().toLowerCase(),
     name: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
   };

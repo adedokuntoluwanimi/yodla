@@ -6,7 +6,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const site = join(root, "vercel-site");
 const output = join(site, "dist");
 const pages = ["index", "gifting", "shop", "product", "bag", "checkout", "journal", "blog", "account", "login", "contact", "help", "404"];
-const version = "gift-experience-1";
+const version = "boutique-1";
 
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
@@ -27,7 +27,21 @@ for (const name of ["favicon.svg", "favicon.ico", "favicon.png", "apple-touch-ic
 cpSync(join(site, "gift-club.css"), join(output, "css", "gift-club.css"));
 cpSync(join(site, "experience.js"), join(output, "js", "experience.js"));
 
+// The boutique is isolated to this branch's customer preview build.
+mkdirSync(join(output, "js", "vendor", "three"), { recursive: true });
+for (const file of ["three.module.js", "three.core.js"]) {
+  cpSync(join(root, "node_modules", "three", "build", file), join(output, "js", "vendor", "three", file));
+}
+cpSync(join(root, "node_modules", "three", "examples", "jsm", "environments", "RoomEnvironment.js"), join(output, "js", "vendor", "three", "RoomEnvironment.js"));
+cpSync(join(root, "node_modules", "three", "LICENSE"), join(output, "js", "vendor", "three", "LICENSE.txt"));
+for (const file of ["boutique.js", "boutique-scene.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
+cpSync(join(site, "boutique", "boutique.css"), join(output, "css", "boutique.css"));
+
 for (const name of pages) {
+  if (["index", "shop", "gifting"].includes(name)) {
+    writeFileSync(join(output, `${name}.html`), readFileSync(join(site, "boutique", "store.html"), "utf8"));
+    continue;
+  }
   const custom = join(site, "pages", `${name}.html`);
   const source = existsSync(custom) ? custom : join(root, "pages", `${name}.html`);
   let html = readFileSync(source, "utf8");

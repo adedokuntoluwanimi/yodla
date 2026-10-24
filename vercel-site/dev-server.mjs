@@ -6,7 +6,10 @@ import { BLOG_POSTS } from "../js/blogs.js";
 import { DEFAULT_HOME, DEFAULT_SITE } from "../js/site-content.js";
 
 const root = resolve("dist");
-const port = Number(process.env.PORT || 4180);
+const args = process.argv.slice(2);
+const option = (name) => args.includes(name) ? args[args.indexOf(name) + 1] : undefined;
+const port = Number(process.env.PORT || option("--port") || 4180);
+const host = option("--host") || "127.0.0.1";
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".ico": "image/x-icon", ".txt": "text/plain" };
 
 createServer((request, response) => {
@@ -36,4 +39,4 @@ createServer((request, response) => {
   }
   response.writeHead(200, { "Content-Type": `${types[extname(file)] || "application/octet-stream"}${[".html", ".js", ".css", ".txt"].includes(extname(file)) ? "; charset=utf-8" : ""}` });
   createReadStream(file).pipe(response);
-}).listen(port, "127.0.0.1", () => console.log(`Yodla gift experience preview: http://localhost:${port}`));
+}).listen(port, host, () => console.log(`Yodla gift experience preview: http://localhost:${port}`));
