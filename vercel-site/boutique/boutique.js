@@ -70,13 +70,14 @@ $('#close-panel').addEventListener('click', closePanel, events);
 dialog.addEventListener('click', event => { if (event.target === dialog && event.clientX < dialog.getBoundingClientRect().left) closePanel(); }, events);
 
 function enter() {
+  doorBell.unlock().catch(()=>{});
   if(!scene)doorBell.ring().catch(()=>{});
   document.body.classList.add('entered');
   $('#welcome').inert = true;
   scene?.enter();
 }
 function visit(id) {
-  if(!document.body.classList.contains('entered')){if(scene)scene.openEntrance();else doorBell.ring().catch(()=>{});}
+  if(!document.body.classList.contains('entered')){doorBell.unlock().catch(()=>{});if(!scene)doorBell.ring().catch(()=>{});}
   if(leaving)return;
   if(orderSession){toast("Finish at the counter, or return to shopping.");return;}
   if (!STATIONS[id]) return;
@@ -323,7 +324,7 @@ function leaveStore(){
 }
 function showGoodbye(){
   for(const child of $('#boutique').children)if(child!==$('#store-goodbye'))child.inert=true;
-  leaving=false;document.body.classList.remove('leaving-store');document.body.classList.add('outside-store');$('#store-goodbye').hidden=false;$('#goodbye-title').focus({preventScroll:true});scene?.pause(true);music.suspend();
+  leaving=false;document.body.classList.remove('leaving-store');document.body.classList.add('outside-store');$('#store-goodbye').hidden=false;$('#goodbye-title').focus({preventScroll:true});scene?.showExterior();scene?.pause(true);music.suspend();
 }
 $('#reenter-store').addEventListener('click',()=>{for(const child of $('#boutique').children)child.inert=child.id==='welcome';$('#store-goodbye').hidden=true;document.body.classList.remove('outside-store');scene?.pause(false);enter();if(!scene)document.querySelector('.basket-button')?.focus();music.resume().catch(()=>{});},events);
 document.addEventListener('visibilitychange',()=>{if(orderSession)orderSession.last=0;},events);
@@ -426,7 +427,7 @@ function fallback() {
   scene?.dispose(); scene = null; document.body.classList.add('fallback-mode');
   $('#loading').hidden = false; $('#loading').classList.add('error');
   $('#loading').textContent = 'The 3D view is unavailable on this device. You can still browse bottles, build gifts, and use checkout.';
-  $('#enter-store').innerHTML='Browse bottles '+icon('arrow'); $('#enter-store').onclick = () => openPanel('catalogue');
+  $('#enter-store').innerHTML='Step inside '+icon('arrow'); $('#enter-store').onclick = () => openPanel('catalogue');
   $('#movement-hint').textContent = 'Use the navigation to browse and prepare your gift.';
 }
 async function boot() {
@@ -437,7 +438,7 @@ async function boot() {
   if(content.meta.stale)$('#catalogue-note').textContent='Showing the bundled collection. Prices and stock are confirmed at checkout.';
   try {
     const { createBoutique } = await import('./boutique-scene.js');
-    scene = createBoutique({ container: $('#scene'), products: PRODUCTS, reduceMotion: reduced,onDoorBell:()=>doorBell.ring().catch(()=>{}),
+    scene = createBoutique({ container: $('#scene'), products: PRODUCTS, reduceMotion: reduced,onEntry:active=>{document.body.classList.toggle('entering-store',active);if(active)$('#travel-status').textContent='Stepping inside…';},onDoorBell:()=>doorBell.ring().catch(()=>{}),
       onSelect: id => { document.body.classList.add('entered'); $('#welcome').inert = true; openPanel('product', id); },
       onStation: arrive,
       onMove: () => { document.body.classList.add('entered'); $('#welcome').inert=true; },
@@ -446,6 +447,7 @@ async function boot() {
       onPosition: (x,z) => { $('#map-you').style.left = `${(x + 7) / 14 * 100}%`; $('#map-you').style.top = `${(z + 10) / 20 * 100}%`; },
     });
     $('#loading').hidden = true;
+    if(document.body.classList.contains('entered')){scene.enter();if(dialog.open)scene.pause(true);}
   } catch { fallback(); }
   scene?.setShoppingBasket(basketLines());
   $('#scene').addEventListener('boutique-render-error', ()=>{fallback();if(orderSession){$('#counter-fallback').hidden=false;orderSession.started=false;beginCounter();}}, events);

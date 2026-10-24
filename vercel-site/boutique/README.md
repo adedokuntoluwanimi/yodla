@@ -58,8 +58,16 @@ Validation includes pure order sequencing, quantity and recipient integrity, pay
 
 ## Readable cards, customer handover and entrance
 
-The original cellar wordmark remains. Its companion emblem is a cropped SVG view of the existing wine-cup logo asset. The extra wall wordmarks have been removed. Name badges and recipient cards use larger, darker type on unlit materials with tone mapping disabled, so room lights cannot wash out their contrast. Recipient messages remain fully available in the accessible tag details.
+The original cellar wordmark remains. Its companion emblem uses the original PNG wine-cup logo with cropped texture coordinates; the interface retains a separate SVG view of that asset. The extra wall wordmarks have been removed. Name badges and recipient cards use larger, darker type on unlit materials with tone mapping disabled, so room lights cannot wash out their contrast. Recipient messages remain fully available in the accessible tag details.
 
 A successful demo payment prints the receipt, then transfers each parcel into the first-person customer’s hands. Multi-recipient gifts are handed over separately. Only after the last transfer do “Shop more” and “Leave store” appear. Continuing removes the fulfilled quantities from the current browser-local selection while retaining recipient and delivery details; canceling before payment preserves everything.
 
 The front wall beside Daniel has framed glass windows and a hinged glass door, brass handles, a push sign and a swinging mechanical bell. Entry and exit open the door and trigger a short synthesised chime. Audio is created only after a visitor action. Leaving follows a collision-safe route to the entrance and shows a goodbye screen with a re-entry button. Reduced motion shortens parcel handovers.
+
+## Exterior opening and PNG emblem repair
+
+The opening camera now starts on the pavement facing the full shopfront. Limestone columns, a wine-coloured canopy, brass trims, illuminated display windows, planted pots, framed glazing and a branded fascia surround the central door. The introductory card stays below the doorway on mobile. A locally bundled exterior image appears immediately during loading and serves as the non-WebGL fallback.
+
+Step inside follows a dedicated approach and threshold path before resuming the existing interior collision routes. The door opens far enough to clear the passage. Audio unlocks on the visitor’s click, then the chime sounds as the camera reaches the threshold. Section shortcuts can queue their destination after entry. The entry simulation checks the initial exterior camera, the passage through the open door, delayed chime, completed arrival, and re-entry.
+
+The black wine-cup square was repaired by removing the nested-image SVG from WebGL texture loading. Both the cellar wall and exterior fascia use the original PNG directly, with texture repeat/offset selecting only the cup emblem. A test checks the source path and crop. The separately authored SVG exterior is retained as source for the raster fallback, which avoids nested SVG image-loading differences.

@@ -38,10 +38,13 @@ export function createAmbientMusic({onChange=()=>{}}={}) {
 // A short mechanical door chime. Audio is unlocked only by a visitor action.
 export function createDoorBell(){
   let context;const voices=new Set();let lastRing=-Infinity;
-  async function ring(){
+  async function unlock(){
     if(typeof navigator!=='undefined'&&navigator.userActivation&&!navigator.userActivation.hasBeenActive)return false;
     const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return false;
-    context ||= new Audio();await context.resume();
+    context ||= new Audio();await context.resume();return true;
+  }
+  async function ring(){
+    if(!await unlock())return false;
     const now=context.currentTime;if(now-lastRing<1)return false;lastRing=now;
     for(const [offset,base] of [[0,1046.5],[.18,830.6]])for(const [harmonic,level]of [[1,.035],[2.76,.008]]){
       const oscillator=context.createOscillator(),gain=context.createGain();oscillator.type='sine';oscillator.frequency.value=base*harmonic;
@@ -51,5 +54,5 @@ export function createDoorBell(){
     }return true;
   }
   function dispose(){voices.forEach(v=>{try{v.stop();}catch{}});context?.close();}
-  return {ring,dispose};
+  return {ring,unlock,dispose};
 }

@@ -42,5 +42,5 @@ test('entrance bell starts only on entry, debounces and releases its audio conte
  const param={value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}};
  class AudioMock{constructor(){contexts++;this.currentTime=0;this.destination={};}async resume(){}createOscillator(){tones++;return {frequency:{...param},connect(){},disconnect(){},start(){},stop(){this.onended?.();}};}createGain(){return {gain:{...param},connect(){},disconnect(){}};}close(){closed++;}}
  globalThis.window={AudioContext:AudioMock};
- const bell=createDoorBell();assert.equal(contexts,0);assert.equal(await bell.ring(),true);assert.equal(tones,4);assert.equal(await bell.ring(),false);bell.dispose();assert.equal(closed,1);delete globalThis.window;
+ const bell=createDoorBell();assert.equal(contexts,0);assert.equal(await bell.unlock(),true);assert.equal(tones,0);assert.equal(await bell.ring(),true);assert.equal(tones,4);assert.equal(await bell.ring(),false);bell.dispose();assert.equal(closed,1);delete globalThis.window;
 });
