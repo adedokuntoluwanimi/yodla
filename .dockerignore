@@ -9,3 +9,7 @@ test
 *.md
 .env*
 npm-debug.log*
+
+CAC/
+tmp/
+*.tmp

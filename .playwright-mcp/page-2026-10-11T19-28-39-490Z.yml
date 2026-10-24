@@ -1,0 +1,249 @@
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - button "Set your delivery location" [ref=e5] [cursor=pointer]
+      - paragraph [ref=e8]: Thoughtfully selected. Responsibly delivered. 18+ only.
+    - generic [ref=e9]:
+      - link "Yodla home" [ref=e10] [cursor=pointer]:
+        - /url: index.html
+        - text: YODLA.
+      - navigation "Main navigation" [ref=e11]:
+        - link "Make a gift" [ref=e12] [cursor=pointer]:
+          - /url: gifting.html
+        - link "Giftable bottles" [ref=e13] [cursor=pointer]:
+          - /url: shop.html?occasion=Gift
+        - link "Shop for yourself" [ref=e14] [cursor=pointer]:
+          - /url: shop.html
+        - link "Journal" [ref=e15] [cursor=pointer]:
+          - /url: journal.html
+      - generic [ref=e16]:
+        - link "Sign in to your account" [ref=e18] [cursor=pointer]:
+          - /url: login.html?next=%2F
+        - generic [ref=e20]:
+          - generic [ref=e21]: Search products
+          - searchbox "Search products" [ref=e23]
+  - main [ref=e24]:
+    - region [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]: The art of giving, bottled
+        - heading [level=1] [ref=e28]:
+          - text: Maketheir day
+          - emphasis [ref=e29]: a story.
+        - paragraph [ref=e30]: For the big news, the small thank you, and the person who deserves something wonderful. Find their bottle. Add your words. We’ll take it from there.
+        - generic [ref=e31]:
+          - link "Make a gift" [ref=e32] [cursor=pointer]:
+            - /url: gifting.html#gift-builder
+          - link "Find your starting point" [ref=e35] [cursor=pointer]:
+            - /url: "#gift-paths"
+            - text: Find your starting point ↓
+        - generic [ref=e36]: THOUGHTFULLY CHOSEN · BEAUTIFULLY SENT · 18+ ONLY
+      - generic "Wrapped bottles ready to give" [ref=e37]:
+        - img "Two gift bottles wrapped with a copper ribbon" [ref=e39]
+        - generic [aria-hidden] [ref=e40]:
+          - generic [ref=e41]: A GIFTFROM YOU
+          - generic [ref=e43]: ✳
+        - generic [ref=e44]:
+          - generic [ref=e45]: 01 / A MOMENT, MADE PERSONAL
+          - generic [ref=e46]: YODLA GIFTING
+    - region [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: A good gift starts somewhere
+        - heading [level=2] [ref=e50]:
+          - text: Who are we
+          - emphasis [ref=e51]: making smile?
+        - paragraph [ref=e52]: Take the route that feels easiest. Every path ends with a gift made your way.
+      - generic [ref=e53]:
+        - tablist "Choose how to start a gift" [ref=e54]:
+          - tab "By person" [selected] [ref=e55] [cursor=pointer]
+          - tab "By occasion" [ref=e56] [cursor=pointer]
+          - tab "By feeling" [ref=e57] [cursor=pointer]
+        - tabpanel [ref=e58]:
+          - link "01 For your favourite person For my partner Make this gift" [ref=e59] [cursor=pointer]:
+            - /url: gifting.html?person=partner#gift-builder
+            - generic [ref=e60]: "01"
+            - generic [ref=e61]:
+              - generic [ref=e62]: For your favourite person
+              - strong [ref=e63]: For my partner
+              - emphasis [ref=e64]: Make this gift ↗
+          - link "02 Because they just get you For a friend Make this gift" [ref=e65] [cursor=pointer]:
+            - /url: gifting.html?person=friend#gift-builder
+            - generic [ref=e66]: "02"
+            - generic [ref=e67]:
+              - generic [ref=e68]: Because they just get you
+              - strong [ref=e69]: For a friend
+              - emphasis [ref=e70]: Make this gift ↗
+          - link "03 A thoughtful thank you, times a few For my people Make this gift" [ref=e71] [cursor=pointer]:
+            - /url: gifting.html?person=team#gift-builder
+            - generic [ref=e72]: "03"
+            - generic [ref=e73]:
+              - generic [ref=e74]: A thoughtful thank you, times a few
+              - strong [ref=e75]: For my people
+              - emphasis [ref=e76]: Make this gift ↗
+    - region [ref=e77]:
+      - img "Gift bottles beside a handwritten note at a candlelit table" [ref=e80]
+      - generic [ref=e81]:
+        - generic [ref=e82]: The details are the gift
+        - heading [level=2] [ref=e83]:
+          - text: They’ll remember
+          - emphasis [ref=e84]: how it felt.
+        - paragraph [ref=e85]: Pick a bottle that suits them. Write what only you could say. Choose wrapping if the moment calls for it. We’ll deliver the gift and share your note after payment.
+        - link "Create their moment" [ref=e86] [cursor=pointer]:
+          - /url: gifting.html#gift-builder
+        - generic [aria-hidden] [ref=e89]: with love, always ↗
+    - region [ref=e90]:
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - generic [ref=e94]: A few lovely places to start
+            - heading [level=2] [ref=e95]:
+              - text: Chosen for
+              - emphasis [ref=e96]: the giving.
+          - link "Explore all bottles" [ref=e97] [cursor=pointer]:
+            - /url: shop.html?occasion=Gift
+        - generic [ref=e100]:
+          - article [ref=e101]:
+            - link "A proper toast Bottega Gold Prosecco View bottle" [ref=e102] [cursor=pointer]:
+              - /url: product.html?id=bottega-gold
+              - generic [ref=e103]: A proper toast
+              - img "Bottega Gold Prosecco" [ref=e105]
+              - generic [ref=e106]: View bottle
+            - generic [ref=e109]:
+              - generic [ref=e110]:
+                - paragraph [ref=e111]: Bottega · Prosecco
+                - heading [level=3] [ref=e112]:
+                  - link "Bottega Gold Prosecco" [ref=e113] [cursor=pointer]:
+                    - /url: product.html?id=bottega-gold
+                - generic [ref=e114]: Choose delivery location
+              - generic [ref=e115]:
+                - strong [ref=e116]: ₦38,500
+                - button "Add Bottega Gold Prosecco to bag" [ref=e117] [cursor=pointer]: +
+          - article [ref=e118]:
+            - link "Host's choice Hennessy Very Special View bottle" [ref=e119] [cursor=pointer]:
+              - /url: product.html?id=hennessy-vs
+              - generic [ref=e120]: Host's choice
+              - img "Hennessy Very Special" [ref=e122]
+              - generic [ref=e123]: View bottle
+            - generic [ref=e126]:
+              - generic [ref=e127]:
+                - paragraph [ref=e128]: Hennessy · Cognac
+                - heading [level=3] [ref=e129]:
+                  - link "Hennessy Very Special" [ref=e130] [cursor=pointer]:
+                    - /url: product.html?id=hennessy-vs
+                - generic [ref=e131]: Choose delivery location
+              - generic [ref=e132]:
+                - strong [ref=e133]: ₦67,000
+                - button "Add Hennessy Very Special to bag" [ref=e134] [cursor=pointer]: +
+          - article [ref=e135]:
+            - link "Dinner after dark Midnight Red Reserve View bottle" [ref=e136] [cursor=pointer]:
+              - /url: product.html?id=midnight-red
+              - generic [ref=e137]: Dinner after dark
+              - img "Midnight Red Reserve" [ref=e139]
+              - generic [ref=e140]: View bottle
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - paragraph [ref=e145]: Yodla Cellar · Red wine
+                - heading [level=3] [ref=e146]:
+                  - link "Midnight Red Reserve" [ref=e147] [cursor=pointer]:
+                    - /url: product.html?id=midnight-red
+                - generic [ref=e148]: Choose delivery location
+              - generic [ref=e149]:
+                - strong [ref=e150]: ₦24,500
+                - button "Add Midnight Red Reserve to bag" [ref=e151] [cursor=pointer]: +
+          - article [ref=e152]:
+            - link "Built for tonic Palm Botanical Gin View bottle" [ref=e153] [cursor=pointer]:
+              - /url: product.html?id=palm-botanical-gin
+              - generic [ref=e154]: Built for tonic
+              - img "Palm Botanical Gin" [ref=e156]
+              - generic [ref=e157]: View bottle
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - paragraph [ref=e162]: Yodla Studio · Gin
+                - heading [level=3] [ref=e163]:
+                  - link "Palm Botanical Gin" [ref=e164] [cursor=pointer]:
+                    - /url: product.html?id=palm-botanical-gin
+                - generic [ref=e165]: Choose delivery location
+              - generic [ref=e166]:
+                - strong [ref=e167]: ₦31,500
+                - button "Add Palm Botanical Gin to bag" [ref=e168] [cursor=pointer]: +
+    - region [ref=e169]:
+      - generic [ref=e170]:
+        - generic [ref=e171]: Made personal, without the puzzle
+        - heading [level=2] [ref=e172]:
+          - text: You bring the thought.
+          - emphasis [ref=e173]: We make it happen.
+        - generic [ref=e174]:
+          - article [ref=e175]:
+            - text: "01"
+            - heading "Tell us who" [level=3] [ref=e176]
+            - paragraph [ref=e177]: Add one person or a few. Each gift gets its own delivery details.
+          - article [ref=e178]:
+            - text: "02"
+            - heading "Choose their pour" [level=3] [ref=e179]
+            - paragraph [ref=e180]: Find the bottles they’ll love, then add a note in your own words.
+          - article [ref=e181]:
+            - text: "03"
+            - heading "Send it beautifully" [level=3] [ref=e182]
+            - paragraph [ref=e183]: Review everything once, pay once, and let us do the delivering.
+        - link "Start a gift" [ref=e184] [cursor=pointer]:
+          - /url: gifting.html#gift-builder
+    - generic [ref=e187]:
+      - img "Ginger and lime mixer in dramatic light" [ref=e189]
+      - generic [ref=e190]:
+        - generic [ref=e191]: A little inspiration
+        - heading "Some moments call for a better bottle." [level=2] [ref=e192]
+        - paragraph [ref=e193]: Our notes on choosing, serving and sharing drinks with the people you love.
+        - link "Read the journal" [ref=e194] [cursor=pointer]:
+          - /url: journal.html
+  - contentinfo [ref=e197]:
+    - generic [ref=e198]:
+      - paragraph [ref=e199]: Make their moment.
+      - link "Create a gift" [ref=e200] [cursor=pointer]:
+        - /url: gifting.html#gift-builder
+    - generic [ref=e203]:
+      - generic [ref=e204]:
+        - link "YODLA." [ref=e205] [cursor=pointer]:
+          - /url: index.html
+        - paragraph [ref=e206]: Thoughtful bottles for the people and moments that matter.
+      - generic [ref=e207]:
+        - heading "Browse" [level=2] [ref=e208]
+        - link "All drinks" [ref=e209] [cursor=pointer]:
+          - /url: shop.html
+        - link "Wines" [ref=e210] [cursor=pointer]:
+          - /url: shop.html?category=Wines
+        - link "Spirits" [ref=e211] [cursor=pointer]:
+          - /url: shop.html?category=Spirits
+        - link "Extras" [ref=e212] [cursor=pointer]:
+          - /url: shop.html?category=Extras
+      - generic [ref=e213]:
+        - heading "Help" [level=2] [ref=e214]
+        - link "Delivery" [ref=e215] [cursor=pointer]:
+          - /url: help.html#delivery
+        - link "Returns" [ref=e216] [cursor=pointer]:
+          - /url: help.html#returns
+        - link "Contact" [ref=e217] [cursor=pointer]:
+          - /url: contact.html
+        - link "Instagram" [ref=e218] [cursor=pointer]:
+          - /url: https://www.instagram.com/yodla.ng/
+        - link "hello@yodla.ng" [ref=e219] [cursor=pointer]:
+          - /url: mailto:hello@yodla.ng
+        - link "Account" [ref=e220] [cursor=pointer]:
+          - /url: account.html
+      - generic [ref=e221]:
+        - heading "Stay in the mix" [level=2] [ref=e222]
+        - generic [ref=e223]:
+          - generic [ref=e224]: Email address
+          - textbox "Email address" [ref=e225]:
+            - /placeholder: you@email.com
+          - button "Join" [ref=e226] [cursor=pointer]
+        - text: Useful pours, no noise.
+    - generic [ref=e227]:
+      - generic [ref=e228]: © 2026 Yodla
+      - generic [ref=e229]: Drink responsibly · 18+
+      - generic [ref=e230]: Gifting, made personal
+  - button "Ask Yodla for a drink recommendation" [ref=e231] [cursor=pointer]:
+    - generic: Ask Yodla
+  - button "Open bag" [ref=e232] [cursor=pointer]:
+    - generic [ref=e237]: "0"
+    - generic [ref=e238]: items in bag

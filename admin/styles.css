@@ -1,5 +1,11 @@
 .admin-mark{font:500 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ember)}
 .admin-main{padding-bottom:140px}
+body[data-page=admin] .site-header__main{grid-template-columns:auto auto 1fr auto;gap:14px 18px}
+body[data-page=admin] .site-header__main>.wordmark{justify-self:start;position:static;left:auto;transform:none}
+body[data-page=admin] .site-header__main>.admin-mark{justify-self:start;align-self:center}
+body[data-page=admin] .site-header__main>div:empty{display:none}
+body[data-page=admin] .site-header__main>.button{justify-self:end;min-height:44px;white-space:nowrap}
+body[data-page=admin] .utility-bar p{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .admin-exposure{display:flex;justify-content:center;gap:10px;padding:10px 20px;background:#fff0cc;color:#5b3b00;border-bottom:1px solid #d9b45e;font-size:13px;text-align:center}
 .admin-exposure strong{font-weight:700}
 .admin-main .page-intro{display:grid;grid-template-columns:1fr auto;align-items:end;gap:24px}
@@ -41,6 +47,7 @@
 .editor-media img{width:82%;height:82%;object-fit:contain}
 .editor-media span{color:#93878b}
 .form-panel{padding:0 0 34px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.form-panel:last-of-type{border-bottom:0;margin-bottom:0;padding-bottom:96px}
 .form-panel h3{font:650 28px var(--display);letter-spacing:-.04em;margin:0 0 20px}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .form-grid .full{grid-column:1/-1}
@@ -98,11 +105,41 @@ dialog form>div{display:flex;justify-content:flex-end;gap:8px;margin-top:26px}
   body[data-page=admin] .category-rail{display:none!important}
   body[data-page=admin] .site-header__main{grid-template-columns:44px auto 1fr;gap:10px}
   body[data-page=admin] .site-header__main>.wordmark{position:static;left:auto;transform:none}
+  body[data-page=admin] .site-header__main>.admin-mark{display:none}
   body[data-page=admin] .site-header__main>div{display:none}
-  .site-header__main .button{display:none}
+  body[data-page=admin] .site-header__main>.button{display:none}
+  .form-panel:last-of-type{padding-bottom:120px}
   .content-toolbar{flex-direction:column}
   .content-toolbar input{min-width:0;width:100%}
   .pulse-panel{grid-template-columns:1fr}
   .actions-bar{flex-wrap:wrap}
   .actions-bar .button{flex:1}
+}
+
+.admin-email-list{display:grid;gap:10px;margin-top:18px}
+.admin-email-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.admin-exposure .text-link{margin-left:12px}
+.orders-toolbar{flex-wrap:wrap;align-items:center}
+.orders-toolbar input[type=date]{min-width:150px}
+.admin-table-wrap{overflow:auto;border:1px solid var(--line);background:#fff;margin-bottom:22px}
+.admin-table{width:100%;border-collapse:collapse;font:500 14px/1.4 var(--body)}
+.admin-table th,.admin-table td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.admin-table th{font:500 9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:#eee6d8}
+.admin-table tr:last-child td{border-bottom:0}
+.order-row{cursor:pointer}
+.order-row:hover,.order-row.is-active{background:#f7f1e6}
+.order-detail{padding:22px;border:1px solid var(--line);background:#eee6d8;margin-bottom:28px}
+.order-detail__head{display:flex;justify-content:space-between;gap:16px;align-items:start;margin-bottom:18px}
+.order-detail__head h2{font:650 clamp(28px,4vw,42px)/.95 var(--display);letter-spacing:-.04em;margin:6px 0 0}
+.order-detail__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:18px}
+.order-detail__grid h3{font:500 9px var(--mono);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px;color:var(--muted)}
+.order-detail__grid p{margin:0;font:500 14px/1.45 var(--body)}
+.occasion-checks{display:grid;gap:10px}
+.occasion-checks>span{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.checkbox-row{display:flex;flex-wrap:wrap;gap:10px 16px}
+@media(max-width:850px){
+  .order-detail__grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .order-detail__grid{grid-template-columns:1fr}
 }

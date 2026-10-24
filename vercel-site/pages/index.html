@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Gifts that get a reaction. Pick their bottle, write your note, and send something wonderful with Yodla.">
+  <title>Yodla Gift Club — Make their day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="gift-home" class="gift-club">
+  <header class="site-header" data-site-header></header>
+  <main>
+    <section class="club-hero" aria-labelledby="club-title">
+      <div class="club-hero__noise" aria-hidden="true"></div>
+      <div class="club-hero__content shell">
+        <div class="club-hero__copy">
+          <span class="club-kicker"><span class="club-kicker__spark" aria-hidden="true">✳</span> The Yodla Gift Club</span>
+          <h1 id="club-title">Gifts that<br><em>get a</em><br>reaction<span class="club-period">.</span></h1>
+          <p>For the person who has everything, the friend who showed up, or the day worth shouting about. Make it personal. We’ll make it unforgettable.</p>
+          <div class="club-hero__actions"><a class="club-button club-button--blue" href="gifting.html#gift-builder">Build their gift <span aria-hidden="true">↗</span></a><a class="club-inline-link" href="#gift-paths">Help me choose <span aria-hidden="true">↓</span></a></div>
+          <div class="club-hero__proof"><span class="club-hero__proof-icon" aria-hidden="true">✦</span><span>Chosen by you · Wrapped with care · Sent with love</span></div>
+        </div>
+        <div class="club-hero__playground" aria-label="Pip the gift box and Dot the note welcome you to the Gift Club">
+          <div class="club-hero__halo" aria-hidden="true"></div>
+          <span class="club-hero__orbit club-hero__orbit--one" aria-hidden="true">✳</span><span class="club-hero__orbit club-hero__orbit--two" aria-hidden="true">✦</span>
+          <div class="club-hero__bubble"><span>Good news:</span><strong>you’re about to make someone’s day!</strong></div>
+          <img class="club-character club-character--pip" src="assets/characters/pip.webp" alt="" width="900" height="1200" fetchpriority="high">
+          <img class="club-character club-character--dot" src="assets/characters/dot.webp" alt="" width="640" height="960">
+          <span class="club-hero__ground" aria-hidden="true"></span>
+          <span class="club-hero__sticker">100%<br>THOUGHTFUL</span>
+        </div>
+      </div>
+      <div class="club-hero__ticker" aria-hidden="true"><div>GOOD GIFTS <i>✳</i> BIG FEELINGS <i>✳</i> LITTLE SURPRISES <i>✳</i> GOOD GIFTS <i>✳</i> BIG FEELINGS <i>✳</i> LITTLE SURPRISES <i>✳</i></div></div>
+    </section>
+
+    <section class="club-picker section shell" id="gift-paths" aria-labelledby="club-picker-title"><div class="club-picker__heading"><span class="club-label">YOUR FIRST MOVE</span><h2 id="club-picker-title">So, who’s the<br><em>lucky one?</em></h2><p>Start wherever inspiration strikes. We’ll meet you there.</p></div><div class="club-picker__body"><div class="gift-paths__tabs" role="tablist" aria-label="Choose how to start a gift"><button type="button" role="tab" aria-selected="true" aria-controls="gift-path-panel" data-intent-tab="person">By person</button><button type="button" role="tab" aria-selected="false" aria-controls="gift-path-panel" data-intent-tab="occasion" tabindex="-1">By occasion</button><button type="button" role="tab" aria-selected="false" aria-controls="gift-path-panel" data-intent-tab="mood" tabindex="-1">By feeling</button></div><div class="gift-paths__panel" id="gift-path-panel" role="tabpanel" data-intent-panel aria-live="polite"></div></div></section>
+
+    <section class="club-explain" aria-labelledby="club-explain-title"><div class="shell"><div class="club-explain__heading"><span class="club-label">NOT JUST A BOTTLE</span><h2 id="club-explain-title">It’s the <em>“you<br>remembered?!”</em><br>for us.</h2><p>The note they screenshot. The bottle they save for Friday. The surprise that shows you paid attention.</p><a class="club-button club-button--ink" href="gifting.html#gift-builder">Make it happen <span aria-hidden="true">↗</span></a></div><div class="club-explain__stage"><span class="club-explain__stamp" aria-hidden="true">A LITTLE<br>EXTRA LOVE</span><img src="assets/characters/dot.webp" alt="" loading="lazy" width="640" height="960"><div class="club-explain__note"><small>DEAR YOU,</small><p>Just a little something to say you’re pretty wonderful.</p><span>LOVE, ME ♡</span></div></div></div></section>
+
+    <section class="club-featured section shell" aria-labelledby="club-featured-title"><div class="club-featured__heading"><div><span class="club-label">GREAT TASTE. GREAT TIMING.</span><h2 id="club-featured-title">Giftable<br><em>good stuff.</em></h2></div><a class="club-inline-link" href="shop.html?occasion=Gift">See every bottle <span aria-hidden="true">↗</span></a></div><div class="product-grid" data-featured-grid></div></section>
+
+    <section class="club-note" aria-labelledby="club-note-title"><div class="shell club-note__inner"><div><span class="club-label">THE PART THEY KEEP</span><h2 id="club-note-title">Say it in<br><em>your words.</em></h2><p>It’s your gift. It should sound like you. Start a note here and carry it into the gift studio.</p><label class="club-note__label" for="club-note-input">Your note</label><textarea id="club-note-input" data-quick-note maxlength="500" rows="3" placeholder="You deserve every good thing coming your way…"></textarea><span class="club-note__count" data-quick-note-count>0 / 500</span><button class="club-button club-button--blue" type="button" data-quick-note-save>Make this a gift <span aria-hidden="true">↗</span></button></div><div class="club-note__preview"><img src="assets/characters/pip.webp" alt="" loading="lazy" width="900" height="1200"><div class="club-note__card"><small>TO SOMEONE SPECIAL</small><p data-quick-note-preview>Your words make it theirs.</p><span>♡ FROM YOU</span></div></div></div></section>
+
+    <section class="club-how section shell" aria-labelledby="club-how-title"><div class="club-how__head"><span class="club-label">THREE GOOD MOVES</span><h2 id="club-how-title">Easy to make.<br><em>Lovely to get.</em></h2></div><div class="club-how__grid"><article><span>01 / WHO</span><h3>Name your people.</h3><p>One person or a few. Each gets a gift with their own delivery details.</p></article><article><span>02 / WHAT</span><h3>Find their thing.</h3><p>Choose bottles, add your words, and wrap it if the moment calls for it.</p></article><article><span>03 / DONE</span><h3>Send the feeling.</h3><p>Review once, pay once, and leave the lovely part to us.</p></article></div><a class="club-button club-button--ink" href="gifting.html#gift-builder">Start a gift <span aria-hidden="true">↗</span></a></section>
+
+    <section class="club-journal shell section"><div><span class="club-label">THE GOOD WORD</span><h2>Need a little<br><em>inspiration?</em></h2><p>Good gifts come with good stories. Find ours in the journal.</p><a class="club-inline-link" href="journal.html">Read the journal <span aria-hidden="true">↗</span></a></div><img src="assets/characters/dot.webp" alt="" loading="lazy" width="640" height="960"></section>
+  </main>
+  <footer data-site-footer></footer>
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/ScrollTrigger.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

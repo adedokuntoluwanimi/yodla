@@ -8,3 +8,7 @@ public
 test
 .env*
 npm-debug.log*
+
+CAC/
+tmp/
+*.tmp

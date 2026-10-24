@@ -1,0 +1,11 @@
+{
+  "name": "yodla-gifting-experience",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node ../scripts/build-vercel.mjs",
+    "dev": "node dev-server.mjs",
+    "test": "node --test test/*.test.js"
+  }
+}

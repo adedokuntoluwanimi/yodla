@@ -1,4 +1,6 @@
-export const LOCATIONS = ["Lagos", "Abuja", "Ibadan", "Port Harcourt"];
+import { LOCATIONS, NIGERIAN_STATES } from "./states.js";
+
+export { LOCATIONS, NIGERIAN_STATES };
 
 export const CATEGORIES = [
   "All",
@@ -27,7 +29,7 @@ export const PRODUCTS = [
     image: "assets/products/bottega-gold.png",
     imageMode: "light",
     tag: "A proper toast",
-    occasions: ["Toast", "Hosting", "Gift"],
+    occasions: ["Toast", "Gifting", "Gift"],
     description: "Bright, fragrant and easy to pour when the room is ready for a toast.",
     notes: ["Pear", "White flowers", "Soft citrus"],
     serve: "Serve well chilled in a flute or white-wine glass.",
@@ -45,7 +47,7 @@ export const PRODUCTS = [
     image: "assets/products/hennessy-vs.jpg",
     imageMode: "light",
     tag: "Host's choice",
-    occasions: ["Hosting", "Gift", "Weekend"],
+    occasions: ["Gifting", "Gift", "Weekend"],
     description: "A familiar, full-bodied cognac for generous pours and late conversations.",
     notes: ["Oak", "Vanilla", "Roasted fruit"],
     serve: "Pour neat, over one cube, or lengthen with ginger.",
@@ -63,7 +65,7 @@ export const PRODUCTS = [
     image: "assets/products/jack-daniels.png",
     imageMode: "dark",
     tag: "Tennessee classic",
-    occasions: ["Hosting", "Weekend", "Gift"],
+    occasions: ["Gifting", "Weekend", "Gift"],
     description: "Smooth Tennessee whiskey with enough character for a simple highball.",
     notes: ["Caramel", "Charred oak", "Banana"],
     serve: "Try with cola, soda or one large cube of ice.",
@@ -81,7 +83,7 @@ export const PRODUCTS = [
     image: "assets/products/heineken.jpg",
     imageMode: "light",
     tag: "Serve cold",
-    occasions: ["Weekend", "Hosting"],
+    occasions: ["Weekend", "Gifting"],
     description: "A crisp six-pack for the fridge, the match and the people still on their way.",
     notes: ["Crisp malt", "Light hops", "Clean finish"],
     serve: "Keep cold and open when everyone arrives.",
@@ -99,7 +101,7 @@ export const PRODUCTS = [
     image: "assets/products/originals/midnight-red.jpg",
     imageMode: "dark",
     tag: "Dinner after dark",
-    occasions: ["Dinner", "Hosting"],
+    occasions: ["Dinner", "Gifting"],
     description: "A prototype cellar selection imagined for peppered meat, candlelight and unhurried dinners.",
     notes: ["Black cherry", "Cocoa", "Warm spice"],
     serve: "Open twenty minutes before dinner and pour just below room temperature.",
@@ -137,7 +139,7 @@ export const PRODUCTS = [
     image: "assets/products/originals/botanical-gin.jpg",
     imageMode: "dark",
     tag: "Built for tonic",
-    occasions: ["Hosting", "Weekend", "Gift"],
+    occasions: ["Gifting", "Weekend", "Gift"],
     description: "A fictional small-batch gin concept with a bright botanical profile and a clean finish.",
     notes: ["Juniper", "Lime leaf", "Alligator pepper"],
     serve: "One part gin, three parts tonic, plenty of ice and a lime peel.",
@@ -156,7 +158,7 @@ export const PRODUCTS = [
     image: "assets/products/originals/copper-rum.jpg",
     imageMode: "dark",
     tag: "Slow, warm pour",
-    occasions: ["Weekend", "Gift", "Hosting"],
+    occasions: ["Weekend", "Gift", "Gifting"],
     description: "A fictional amber rum concept with rounded spice and a polished after-dinner character.",
     notes: ["Burnt sugar", "Orange peel", "Nutmeg"],
     serve: "Pour neat or build a short drink with ginger and bitters.",
@@ -175,7 +177,7 @@ export const PRODUCTS = [
     image: "assets/products/originals/indigo-vodka.jpg",
     imageMode: "dark",
     tag: "Clean after midnight",
-    occasions: ["Hosting", "Weekend"],
+    occasions: ["Gifting", "Weekend"],
     description: "A fictional architectural vodka concept for crisp highballs and a crowded ice bucket.",
     notes: ["Clean grain", "Soft mineral", "Dry finish"],
     serve: "Chill hard and pair with soda, citrus or a dry mixer.",
@@ -194,7 +196,7 @@ export const PRODUCTS = [
     image: "assets/products/originals/ginger-lime.jpg",
     imageMode: "dark",
     tag: "Brighten the pour",
-    occasions: ["Hosting", "Weekend"],
+    occasions: ["Gifting", "Weekend"],
     description: "A fictional alcohol-free mixer concept with ginger heat, lime lift and fine bubbles.",
     notes: ["Fresh ginger", "Lime zest", "Dry sparkle"],
     serve: "Pour over ice alone or use to lengthen dark spirits.",
@@ -213,7 +215,7 @@ export const PRODUCTS = [
     image: "assets/products/originals/malt-reserve.jpg",
     imageMode: "dark",
     tag: "A richer zero",
-    occasions: ["Dinner", "Hosting", "Weekend"],
+    occasions: ["Dinner", "Gifting", "Weekend"],
     description: "A fictional full-flavoured malt concept for guests who want something celebratory without alcohol.",
     notes: ["Roasted malt", "Caramel", "Cocoa husk"],
     serve: "Serve properly cold in a tall glass.",
@@ -251,7 +253,11 @@ export function getProduct(productId) {
 
 export function getAvailability(product, location) {
   if (!location) return "choose-location";
-  return product.availability[location] || "unavailable";
+  const availability = product.availability || {};
+  if (availability[location]) return availability[location];
+  const values = Object.values(availability);
+  if (values.length === 1) return values[0];
+  return "unavailable";
 }
 
 export function filterProducts(filters = {}) {
@@ -261,11 +267,15 @@ export function filterProducts(filters = {}) {
   const category = filters.category || "All";
   const occasion = filters.occasion || "";
   const location = filters.location || "";
+  const giftish = new Set(["Gift", "Gifting", "Hosting"]);
 
   return PRODUCTS.filter((product) => {
     const searchable = `${product.name} ${product.brand} ${product.category} ${product.subcategory} ${product.notes.join(" ")}`.toLowerCase();
+    const occasionOk = !occasion
+      || product.occasions.includes(occasion)
+      || (giftish.has(occasion) && product.occasions.some((item) => giftish.has(item)));
     return (category === "All" || product.category === category)
-      && (!occasion || product.occasions.includes(occasion))
+      && occasionOk
       && (!query || searchable.includes(query))
       && product.price >= minimum
       && product.price <= maximum

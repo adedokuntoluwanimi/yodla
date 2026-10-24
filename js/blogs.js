@@ -1,7 +1,7 @@
 export const BLOG_POSTS = [
   {
     id: "highball-for-a-full-house",
-    category: "Hosting",
+    category: "Gifting",
     readTime: "4 min read",
     title: "The highball that saves a crowded house.",
     excerpt: "One ratio, plenty of ice, and no queue forming at the kitchen counter.",

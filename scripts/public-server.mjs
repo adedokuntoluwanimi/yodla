@@ -1,20 +1,27 @@
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, relative, resolve, sep } from "node:path";
 import concierge from "../api/concierge.js";
 import content from "../api/content.js";
+import contact from "../api/contact.js";
 import legacy from "../api/legacy.js";
 import llms from "../api/llms.js";
 import render from "../api/render.js";
 import rss from "../api/rss.js";
 import sitemap from "../api/sitemap.js";
 import uploads from "../api/uploads.js";
+import runtimeConfig from "../api/runtime-config.js";
+import admins from "../api/admins.js";
+import commerce from "../api/commerce.js";
 import adminContent from "../admin/api/content.js";
 import adminDocument from "../admin/api/document.js";
 import adminPreview from "../admin/api/preview.js";
 import adminUpload from "../admin/api/upload.js";
+import adminOrders from "../admin/api/orders.js";
+import adminSubscribers from "../admin/api/subscribers.js";
 import { getPublishedBlog, getPublishedProduct } from "../lib/content-service.js";
 import { publicSiteUrl, renderContentPage, renderNotFound } from "../lib/seo-render.js";
+import { logError } from "../lib/log.js";
 
 const root = resolve("public");
 const port = Number(process.env.PORT || 8080);
@@ -48,11 +55,26 @@ function staticFile(pathname) {
 const apiHandlers = new Map([
   ["/api/content", content], ["/api/concierge", concierge], ["/api/render", render],
   ["/api/sitemap", sitemap], ["/api/rss", rss], ["/api/llms", llms],
+  ["/api/runtime-config", runtimeConfig], ["/api/admins", admins], ["/api/contact", contact],
   ["/sitemap.xml", sitemap], ["/rss.xml", rss], ["/llms.txt", llms],
   ["/admin/api/content", adminContent], ["/admin/api/document", adminDocument],
   ["/admin/api/preview", adminPreview], ["/admin/api/upload", adminUpload],
+  ["/admin/api/admins", admins], ["/admin/api/orders", adminOrders], ["/admin/api/subscribers", adminSubscribers],
   ["/api/admin/content", adminContent], ["/api/admin/document", adminDocument],
   ["/api/admin/preview", adminPreview], ["/api/admin/upload", adminUpload],
+  ["/api/admin/admins", admins], ["/api/admin/orders", adminOrders], ["/api/admin/subscribers", adminSubscribers],
+]);
+
+function notFoundPage() {
+  const file = resolve(root, "404.html");
+  if (existsSync(file)) return readFileSync(file, "utf8");
+  return renderNotFound("page");
+}
+
+const commerceActions = new Set([
+  "search_products", "get_product_details", "check_inventory", "check_delivery",
+  "create_cart", "add_to_cart", "calculate_order", "create_customer",
+  "create_payment", "create_order", "get_order_status",
 ]);
 
 createServer(async (request, response) => {
@@ -79,6 +101,11 @@ createServer(async (request, response) => {
       return legacy(request, response);
     }
 
+    const commerceMatch = pathname.match(/^\/api\/commerce\/([^/]+)$/);
+    if (commerceMatch && commerceActions.has(commerceMatch[1])) {
+      return commerce(request, response, commerceMatch[1]);
+    }
+
     const apiHandler = apiHandlers.get(pathname);
     if (apiHandler) return apiHandler(request, response);
 
@@ -94,7 +121,7 @@ createServer(async (request, response) => {
 
     if (request.method !== "GET" && request.method !== "HEAD") return send(response, 405, "Method not allowed", "text/plain; charset=utf-8", { Allow: "GET, HEAD" });
     const file = staticFile(pathname);
-    if (!file) return send(response, 404, "Not found");
+    if (!file) return send(response, 404, notFoundPage(), "text/html; charset=utf-8");
     const contentType = types[extname(file).toLowerCase()] || "application/octet-stream";
     const immutable = url.searchParams.has("v") && /\.(?:avif|css|ico|js|png|svg|webp)$/i.test(file);
     const adminAsset = pathname.startsWith("/admin/");
@@ -105,8 +132,8 @@ createServer(async (request, response) => {
     if (request.method === "HEAD") return response.end();
     createReadStream(file).pipe(response);
   } catch (error) {
-    console.error(JSON.stringify({ severity: "ERROR", event: "request_failed", reason: error?.name || "Error" }));
-    if (!response.headersSent) return send(response, 500, "Something went wrong");
+    logError("request_failed", error);
+    if (!response.headersSent) return send(response, 500, "Something went wrong. Please try again.");
     response.end();
   }
 }).listen(port, "0.0.0.0", () => console.log(`Yodla storefront and admin listening on ${port}`));

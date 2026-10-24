@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Yodla gifting — name who it’s for, pick bottles, review, and send a branded note.">
+  <title>Gifting — Yodla</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="gifting">
+  <header class="site-header" data-site-header></header>
+  <main>
+    <section class="hero" data-gift-hero>
+      <div class="hero-grain"></div>
+      <div class="hero-copy shell">
+        <span class="eyebrow eyebrow--light">Gifting</span>
+        <h1>Gifting that<br><em>lands.</em></h1>
+        <p>Name who it’s for, pick the bottles, review once — then they get the note when you pay.</p>
+        <div class="hero-actions">
+          <a class="button button--cream" href="#gift-builder" data-gift-start>Build a gift <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+          <button type="button" class="text-link text-link--light" data-open="concierge" data-gift-ask data-chat-seed="I’m on the gifting page — help me send a gift">Ask Yodla</button>
+        </div>
+      </div>
+
+      <div class="hero-stage" data-hero-carousel data-gift-carousel role="region" aria-roledescription="carousel" aria-label="Gift imagery" tabindex="0">
+        <div class="hero-orbit"></div>
+        <a class="hero-slide-link" data-hero-link href="#gift-builder" aria-label="Build a gift">
+          <picture class="hero-picture">
+            <source type="image/webp" data-hero-webp srcset="assets/gifting/gift-ribbon-cutout.webp?v=cutout4">
+            <img class="hero-bottle" src="assets/gifting/gift-ribbon-cutout.webp?v=cutout4" alt="" width="900" height="1200" fetchpriority="high">
+          </picture>
+        </a>
+        <span class="hero-caption">A little thought, beautifully bottled<br><b>Make their moment</b></span>
+        <span class="hero-stamp">Selected<br>with<br>care</span>
+        <div class="hero-controls" aria-label="Gift images">
+          <button type="button" data-hero-direction="-1" aria-label="Previous image"><svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-left"></use></svg></button>
+          <span data-hero-position aria-hidden="true">01 / 04</span>
+          <button type="button" data-hero-direction="1" aria-label="Next image"><svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-right"></use></svg></button>
+        </div>
+        <p class="sr-only" data-hero-live aria-live="polite">Image 1 of 4</p>
+      </div>
+
+      <div class="hero-marquee"><div>Name who it’s for <i><svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#spark"></use></svg></i> Pick the bottles <i><svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#spark"></use></svg></i> Review once <i><svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#spark"></use></svg></i> They get the note <i><svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#spark"></use></svg></i></div></div>
+    </section>
+
+    <section class="gift-flow section" id="gift-builder" data-gift-deck>
+      <div class="shell gift-flow__inner">
+        <div class="gift-progress" aria-hidden="true">
+          <span data-gift-progress-label>Step 01</span>
+          <ol>
+            <li data-gift-dot="1"></li>
+            <li data-gift-dot="2"></li>
+            <li data-gift-dot="3"></li>
+          </ol>
+        </div>
+
+        <div class="gift-panel on" data-gift-panel="1">
+          <span class="eyebrow">Step 01</span>
+          <h2>Who is<br><em>this for?</em></h2>
+          <p>Add up to five people. Each gets their own delivery details and a branded note after you pay.</p>
+          <form class="gift-add-form" data-gift-add>
+            <div class="field-pair">
+              <label>First name<input name="firstName" autocomplete="given-name" placeholder="Ada" maxlength="80" required></label>
+              <label>Last name<input name="lastName" autocomplete="family-name" placeholder="Okonkwo" maxlength="80" required></label>
+            </div>
+            <div class="field-pair">
+              <label>Email<input type="email" name="email" required autocomplete="email" placeholder="ada@email.com" maxlength="160"></label>
+              <label>Phone<input type="tel" name="phone" required autocomplete="tel" inputmode="tel" placeholder="0800 000 0000" maxlength="40"></label>
+            </div>
+            <label>Delivery address<input name="address" required autocomplete="street-address" placeholder="Street, estate, landmark" maxlength="300"></label>
+            <div class="field-pair">
+              <label>State<select name="state" data-gift-state required><option value="">Choose state</option></select></label>
+              <label>Note for courier<input name="note" placeholder="Gate code, timing" maxlength="500"></label>
+            </div>
+            <button type="submit" class="button button--dark">Add recipient</button>
+            <p class="gift-builder__hint" data-gift-add-status aria-live="polite"></p>
+          </form>
+          <ul class="gift-recipients" data-gift-recipients></ul>
+          <label class="gift-message-label">Shared personal note
+            <textarea name="message" data-gift-message rows="3" maxlength="500" placeholder="A short line they’ll see in the email"></textarea>
+          </label>
+          <label class="check-row"><input type="checkbox" data-gift-wrap> Gift wrap (+₦1,500)</label>
+          <label class="check-row"><input type="checkbox" data-gift-notify checked> Email each recipient after payment</label>
+          <div class="gift-flow__nav">
+            <button type="button" class="button button--ember" data-gift-next>Continue <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+          </div>
+        </div>
+
+        <div class="gift-panel" data-gift-panel="2" hidden>
+          <span class="eyebrow">Step 02</span>
+          <h2>Pick the<br><em>bottles.</em></h2>
+          <p>Choose a recipient, add bottles for them, then switch people if you’re gifting more than one.</p>
+          <label class="gift-message-label">Shopping for
+            <select data-gift-person></select>
+          </label>
+          <div class="gift-pick-rail" data-gift-products></div>
+          <div class="gift-assign" data-gift-assign></div>
+          <div class="gift-flow__nav">
+            <button type="button" class="button button--ember" data-gift-next>Review <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+            <button type="button" class="text-link" data-gift-back>Back to people</button>
+          </div>
+        </div>
+
+        <div class="gift-panel" data-gift-panel="3" hidden>
+          <span class="eyebrow">Step 03</span>
+          <h2>Review<br><em>before you send.</em></h2>
+          <p>One last look — then pay as the buyer. Each recipient keeps their own delivery details.</p>
+          <div class="gift-review" data-gift-review></div>
+          <p class="gift-builder__hint" data-gift-continue-hint></p>
+          <div class="gift-flow__nav">
+            <a class="button button--ember" href="checkout.html?gift=1" data-gift-checkout>Continue to checkout <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></a>
+            <button type="button" class="text-link" data-gift-back>Back to bottles</button>
+          </div>
+          <button type="button" class="text-link" data-open="concierge" data-gift-ask data-chat-seed="I’m reviewing a gift — help me finish payment">Finish with Ask Yodla</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="gift-remove-dialog" data-gift-remove-dialog>
+    <form method="dialog" class="gift-remove-dialog__panel">
+      <h2>Remove this recipient?</h2>
+      <p>Their bottles will be cleared from this gift.</p>
+      <div class="hero-actions">
+        <button type="button" class="button button--cream" data-remove-confirm>Remove</button>
+        <button type="button" class="text-link text-link--light" data-remove-cancel>Keep them</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer data-site-footer></footer>
+  <script src="js/vendor/gsap.min.js"></script>
+  <script src="js/vendor/ScrollTrigger.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

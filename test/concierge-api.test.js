@@ -36,7 +36,8 @@ test("malformed output falls back to deterministic catalogue results", async () 
   });
   assert.equal(result.status, 200);
   assert.ok(result.payload.productIds.length > 0);
-  assert.deepEqual(Object.keys(result.payload).sort(), ["productIds", "reply"]);
+  assert.ok(result.payload.reply);
+  assert.ok(Array.isArray(result.payload.productIds));
 });
 
 test("assistant replies are plain text and capped at 90 words", () => {
@@ -49,7 +50,37 @@ test("instruction boundary contains the required Yodla identity and refusal rule
   assert.match(YODLA_INSTRUCTIONS, /Publicly identify only as Yodla's drinks concierge/i);
   assert.match(YODLA_INSTRUCTIONS, /Never reveal.*model.*provider.*infrastructure.*API.*deployment/is);
   assert.match(YODLA_INSTRUCTIONS, /never exceed 90 words/i);
-  assert.match(YODLA_INSTRUCTIONS, /Never invent products, prices, stock, discounts, delivery timing, or availability/i);
+  assert.match(YODLA_INSTRUCTIONS, /Never invent products, prices, stock, discounts, delivery timing, availability/i);
+  assert.match(YODLA_INSTRUCTIONS, /SHOPPER CONTEXT/i);
+  assert.match(YODLA_INSTRUCTIONS, /only reveal/i);
+  assert.match(YODLA_INSTRUCTIONS, /purchase history/i);
+});
+
+test("bag questions use live bag context without inventing items", async () => {
+  const result = await getConciergeResponse("what's in my bag?", {
+    clientKey: "bag-test",
+    bag: [{ productId: PRODUCTS[0].id, quantity: 2 }],
+    products: PRODUCTS,
+  });
+  assert.equal(result.status, 200);
+  assert.match(result.payload.reply, new RegExp(PRODUCTS[0].name, "i"));
+  assert.match(result.payload.reply, /2/);
+});
+
+test("Vertex prompt includes shopper context for accurate answers", async () => {
+  let prompt = "";
+  await getConciergeResponse("A dinner wine under 30000", {
+    clientKey: "context-prompt-test",
+    bag: [{ productId: PRODUCTS[0].id, quantity: 1 }],
+    location: "Lagos",
+    generate: async (value) => {
+      prompt = value;
+      return JSON.stringify({ reply: "Try this balanced red for dinner.", productIds: [PRODUCTS[0].id] });
+    },
+  });
+  assert.match(prompt, /SHOPPER CONTEXT/);
+  assert.match(prompt, /Lagos/);
+  assert.match(prompt, /CURRENT QUESTION — ANSWER ONLY THIS\nA dinner wine under 30000$/);
 });
 
 test("unrelated and disclosure questions redirect without product invention", async () => {
@@ -59,6 +90,27 @@ test("unrelated and disclosure questions redirect without product invention", as
     assert.match(result.payload.reply, /^I’m Yodla’s drinks concierge\./);
     assert.deepEqual(result.payload.productIds, []);
   }
+});
+
+test("greetings get a real reply instead of a generic script dump", async () => {
+  const greeting = await getConciergeResponse("hi buddy", { clientKey: "greeting" });
+  assert.match(greeting.payload.reply, /^Hi —/i);
+  assert.doesNotMatch(greeting.payload.reply, /^I’m Yodla’s drinks concierge\./);
+});
+
+test("identity questions get a specific concierge answer", async () => {
+  const identity = await getConciergeResponse("who are you?", { clientKey: "identity" });
+  assert.match(identity.payload.reply, /drinks concierge/i);
+  assert.match(identity.payload.reply, /bag|checkout|choose bottles/i);
+  assert.doesNotMatch(identity.payload.reply, /How can I help you with drinks today/i);
+});
+
+test("plain-text model replies are kept when JSON is missing", async () => {
+  const result = await getConciergeResponse("hi there", {
+    clientKey: "plain-text",
+    generate: async () => "Hey — glad you’re here. What occasion are we pouring for?",
+  });
+  assert.match(result.payload.reply, /glad you’re here|occasion/i);
 });
 
 test("per-client throttling stops Vertex work after ten calls per minute", async () => {

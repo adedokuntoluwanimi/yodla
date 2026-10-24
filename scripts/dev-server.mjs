@@ -5,6 +5,12 @@ import adminContent from "../admin/api/content.js";
 import adminDocument from "../admin/api/document.js";
 import adminPreview from "../admin/api/preview.js";
 import adminUpload from "../admin/api/upload.js";
+import adminOrders from "../admin/api/orders.js";
+import adminSubscribers from "../admin/api/subscribers.js";
+import admins from "../api/admins.js";
+import commerce from "../api/commerce.js";
+import contact from "../api/contact.js";
+import runtimeConfig from "../api/runtime-config.js";
 import { getConciergeResponse } from "../js/concierge-api.js";
 import { getPublishedBlog, getPublishedContent, getPublishedProduct } from "../lib/content-service.js";
 import { renderContentPage, renderLlmsTxt, renderNotFound } from "../lib/seo-render.js";
@@ -38,7 +44,10 @@ async function concierge(request, response) {
   try {
     const body = await readJson(request);
     const content = await getPublishedContent();
-    const result = await getConciergeResponse(body.message, { products: content.products });
+    const result = await getConciergeResponse(body.message, {
+      products: content.products,
+      sessionId: body.sessionId || "dev",
+    });
     return sendJson(response, result.status, result.payload);
   } catch (error) {
     console.error("Concierge request error:", error.message);
@@ -51,7 +60,16 @@ const adminHandlers = {
   "/admin/api/document": adminDocument,
   "/admin/api/preview": adminPreview,
   "/admin/api/upload": adminUpload,
+  "/admin/api/admins": admins,
+  "/admin/api/orders": adminOrders,
+  "/admin/api/subscribers": adminSubscribers,
 };
+
+const commerceActions = new Set([
+  "search_products", "get_product_details", "check_inventory", "check_delivery",
+  "create_cart", "add_to_cart", "calculate_order", "create_customer",
+  "create_payment", "create_order", "get_order_status",
+]);
 
 createServer(async (request, response) => {
   const parsedUrl = new URL(request.url, `http://${request.headers.host}`);
@@ -67,6 +85,13 @@ createServer(async (request, response) => {
       return createReadStream(adminFile).pipe(response);
     }
   }
+  if (request.method === "GET" && parsedUrl.pathname === "/api/runtime-config") return runtimeConfig(request, response);
+  if (parsedUrl.pathname === "/api/admins") return admins(request, response);
+  if (parsedUrl.pathname === "/api/contact") return contact(request, response);
+  if (parsedUrl.pathname === "/api/admin/orders") return adminOrders(request, response);
+  if (parsedUrl.pathname === "/api/admin/subscribers") return adminSubscribers(request, response);
+  const commerceMatch = parsedUrl.pathname.match(/^\/api\/commerce\/([^/]+)$/);
+  if (commerceMatch && commerceActions.has(commerceMatch[1])) return commerce(request, response, commerceMatch[1]);
   if (request.method === "GET" && parsedUrl.pathname === "/api/content") {
     return sendJson(response, 200, await getPublishedContent());
   }
@@ -75,7 +100,7 @@ createServer(async (request, response) => {
     response.end(renderLlmsTxt(await getPublishedContent()));
     return;
   }
-  if (request.method === "POST" && new URL(request.url, `http://${request.headers.host}`).pathname === "/api/concierge") {
+  if (request.method === "POST" && parsedUrl.pathname === "/api/concierge") {
     await concierge(request, response);
     return;
   }
@@ -90,7 +115,7 @@ createServer(async (request, response) => {
   }
   const requestPath = decodeURIComponent(parsedUrl.pathname);
   const safePath = normalize(requestPath).replace(/^([/\\])+/, "");
-  const brandIcons = new Set(["favicon.svg", "favicon.ico", "apple-touch-icon.png"]);
+  const brandIcons = new Set(["favicon.svg", "favicon.ico", "favicon.png", "apple-touch-icon.png"]);
   const brandFile = brandIcons.has(safePath) ? resolve(join(root, "assets", "brand", safePath)) : null;
   const pageName = requestPath === "/" || !extname(requestPath) ? "index.html" : safePath.endsWith(".html") ? safePath : null;
   const pageFile = pageName ? resolve(join(root, "pages", pageName)) : null;
@@ -98,6 +123,11 @@ createServer(async (request, response) => {
   const file = [brandFile, pageFile, rootCandidate].find((candidate) => candidate && candidate.startsWith(root) && existsSync(candidate) && statSync(candidate).isFile()) || null;
 
   if (!file) {
+    const notFound = resolve(join(root, "pages", "404.html"));
+    if (existsSync(notFound)) {
+      response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+      return createReadStream(notFound).pipe(response);
+    }
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");
     return;

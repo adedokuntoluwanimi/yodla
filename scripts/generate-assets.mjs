@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pngToIco from "png-to-ico";
@@ -24,18 +24,21 @@ await Promise.all(heroImages.flatMap(([name, source]) => [480, 900].flatMap((wid
 
 const brandDirectory = join("assets", "brand");
 mkdirSync(brandDirectory, { recursive: true });
-const faviconSource = readFileSync(join(brandDirectory, "favicon.svg"));
-await sharp(faviconSource).resize(180, 180).png().toFile(join(brandDirectory, "apple-touch-icon.png"));
+const logoSource = join("assets", "logo.png");
+await sharp(logoSource).resize(180, 180, { fit: "contain", background: { r: 251, g: 248, b: 240, alpha: 1 } }).png().toFile(join(brandDirectory, "apple-touch-icon.png"));
+await sharp(logoSource).resize(64, 64, { fit: "contain", background: { r: 251, g: 248, b: 240, alpha: 1 } }).png().toFile(join(brandDirectory, "favicon.png"));
 const iconDirectory = mkdtempSync(join(tmpdir(), "yodla-favicon-"));
 try {
   const iconPngs = await Promise.all([16, 32, 48].map(async (size) => {
     const path = join(iconDirectory, `favicon-${size}.png`);
-    await sharp(faviconSource).resize(size, size).png().toFile(path);
+    await sharp(logoSource).resize(size, size, { fit: "contain", background: { r: 251, g: 248, b: 240, alpha: 1 } }).png().toFile(path);
     return path;
   }));
   writeFileSync(join(brandDirectory, "favicon.ico"), await pngToIco(iconPngs));
 } finally {
   rmSync(iconDirectory, { recursive: true, force: true });
 }
+// Keep SVG as a PNG-backed fallback link target for older build expectations.
+writeFileSync(join(brandDirectory, "favicon.svg"), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><image href="/favicon.png" width="64" height="64"/></svg>`);
 
-console.log("Generated responsive hero images and Yodla browser icons.");
+console.log("Generated responsive hero images and Yodla browser icons from logo.png.");

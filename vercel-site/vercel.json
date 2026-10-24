@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/api/content", "destination": "https://yodla-fwy32oha6q-uc.a.run.app/api/content" },
+    { "source": "/api/runtime-config", "destination": "https://yodla-fwy32oha6q-uc.a.run.app/api/runtime-config" },
+    { "source": "/api/concierge", "destination": "https://yodla-fwy32oha6q-uc.a.run.app/api/concierge" },
+    { "source": "/api/contact", "destination": "https://yodla-fwy32oha6q-uc.a.run.app/api/contact" },
+    { "source": "/api/commerce/:action", "destination": "https://yodla-fwy32oha6q-uc.a.run.app/api/commerce/:action" },
+    { "source": "/api/uploads/:name", "destination": "https://yodla-fwy32oha6q-uc.a.run.app/api/uploads/:name" },
+    { "source": "/products/:slug", "destination": "/api/detail?kind=product&slug=:slug" },
+    { "source": "/journal/:slug", "destination": "/api/detail?kind=blog&slug=:slug" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
+    { "source": "/(.*)", "headers": [{ "key": "X-Content-Type-Options", "value": "nosniff" }] }
+  ]
+}

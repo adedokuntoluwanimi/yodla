@@ -27,6 +27,12 @@ export async function loadPublishedContent(fetchImpl = globalThis.fetch) {
     replace(LOCATIONS, payload.locations);
     if (payload.site) Object.assign(content.site, payload.site);
     if (payload.home) Object.assign(content.home, payload.home);
+    content.site.navigation = [
+      { label: "Shop all", href: "shop.html" },
+      { label: "Gifting", href: "gifting.html" },
+      { label: "Journal", href: "journal.html" },
+      { label: "Contact", href: "contact.html" },
+    ];
     content.meta = {
       source: payload.meta?.source || "static",
       stale: Boolean(payload.meta?.stale),

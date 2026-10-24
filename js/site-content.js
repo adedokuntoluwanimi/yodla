@@ -2,15 +2,17 @@ export const DEFAULT_SITE = {
   announcement: "Thoughtfully selected. Responsibly delivered. 18+ only.",
   navigation: [
     { label: "Shop all", href: "shop.html" },
-    { label: "Hosting", href: "shop.html?occasion=Hosting" },
-    { label: "Extras", href: "shop.html?category=Extras" },
+    { label: "Gifting", href: "gifting.html" },
     { label: "Journal", href: "journal.html" },
+    { label: "Contact", href: "contact.html" },
   ],
   footerTagline: "Good bottles. Good company.",
   footerDescription: "A contemporary drinks store built around Nigerian tables, nights and celebrations.",
   supportEmail: "hello@yodla.ng",
   supportPhone: "",
-  socialLinks: [],
+  socialLinks: [
+    { label: "Instagram", url: "https://www.instagram.com/yodla.ng/" },
+  ],
   responsibleDrinking: "Drink responsibly · 18+",
   prototypeLabel: "Prototype storefront",
   help: {
@@ -48,7 +50,7 @@ export const DEFAULT_HOME = {
       captionStrong: "The Celebration Duo",
       stamp: "Selected for the moment",
       occasion: "Gift",
-      href: "shop.html?occasion=Gift",
+      href: "gifting.html",
     },
     {
       id: "dinner",
@@ -62,15 +64,15 @@ export const DEFAULT_HOME = {
       href: "shop.html?occasion=Dinner",
     },
     {
-      id: "hosting",
+      id: "gifting",
       image: "assets/products/originals/hero-hosting.png",
       responsiveBase: "hero-hosting",
       imageAlt: "An unbranded botanical bottle with two lime highballs",
-      caption: "For a fuller room",
-      captionStrong: "Hosting, made easy",
+      caption: "Arrive with something worth opening",
+      captionStrong: "Gifting, made easy",
       stamp: "Ready for good company",
-      occasion: "Hosting",
-      href: "shop.html?occasion=Hosting",
+      occasion: "Gift",
+      href: "gifting.html",
     },
     {
       id: "zero",
@@ -86,8 +88,8 @@ export const DEFAULT_HOME = {
   ],
   occasions: [
     { key: "Dinner", eyebrow: "A slower table", title: "Dinner that runs late", action: "Find the bottle" },
-    { key: "Hosting", eyebrow: "A fuller fridge", title: "Everyone is coming", action: "Stock up" },
-    { key: "Gift", eyebrow: "Arrive properly", title: "Something they will open", action: "Choose a gift" },
+    { key: "Gift", eyebrow: "Arrive properly", title: "Gifting that lands", action: "Choose a gift" },
+    { key: "Weekend", eyebrow: "Keep it easy", title: "For the soft landing", action: "Browse weekend" },
   ],
   featuredProductIds: ["bottega-gold", "hennessy-vs", "midnight-red", "palm-botanical-gin"],
   manifesto: {
@@ -95,7 +97,7 @@ export const DEFAULT_HOME = {
     title: "Less shelf noise.\nMore good nights.",
     description: "We organise drinks around how people actually gather—not an endless aisle of tiny decisions.",
     steps: [
-      { title: "Choose the moment", body: "Dinner, hosting, gifting, or the weekend." },
+      { title: "Choose the moment", body: "Dinner, gifting, or the weekend." },
       { title: "Set your city", body: "See what is ready where you are." },
       { title: "Open something good", body: "We make the final stretch feel effortless." },
     ],

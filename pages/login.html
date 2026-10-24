@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Sign in — Yodla</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--ink:#14120f;--wine:#4b111f;--ember:#ef5d2c;--cream:#f5f0e5;--paper:#fbf8f0;--line:rgba(20,18,15,.15);--muted:#706a60;--display:"Bricolage Grotesque",sans-serif;--body:"Manrope",sans-serif;--mono:"DM Mono",monospace}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 20% 10%,#692238 0,#3a101e 28%,#171016 70%);color:var(--ink);font-family:var(--body)}
+    .shell{width:min(920px,100%);min-height:580px;display:grid;grid-template-columns:1.05fr .95fr;background:var(--paper);border:1px solid rgba(255,255,255,.08);box-shadow:0 40px 100px rgba(0,0,0,.35);overflow:hidden}
+    .brand{padding:48px;background:linear-gradient(160deg,#4b111f,#171016 70%);color:#f5f0e5;display:flex;flex-direction:column;justify-content:center}
+    .brand img{width:72px;height:72px;object-fit:contain;border-radius:50%;background:#fff;margin-bottom:28px}
+    .eyebrow{font:500 11px/1.2 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--ember);margin-bottom:18px}
+    .brand h1{font:650 42px/.95 var(--display);letter-spacing:-.05em;margin:0 0 16px}
+    .brand p{margin:0;color:#d7cbbd;line-height:1.7}
+    .panel{padding:42px;display:flex;flex-direction:column;justify-content:center}
+    .panel h2{font:650 34px/.95 var(--display);letter-spacing:-.04em;margin:0 0 8px}
+    .caption{color:var(--muted);margin-bottom:22px}
+    .tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:22px}
+    .tab{flex:1;min-height:48px;border:0;background:none;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer}
+    .tab.active{color:var(--ink);border-color:var(--ember)}
+    .field{margin-bottom:14px}.field label{display:block;font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px;color:var(--muted)}
+    .field input{width:100%;min-height:52px;border:1px solid var(--line);background:#fff;padding:0 14px;font:400 15px var(--body);outline:0}
+    .field input:focus{border-color:var(--ember);box-shadow:0 0 0 3px rgba(239,93,44,.12)}
+    .primary,.google{width:100%;min-height:52px;margin-top:8px;border:1px solid var(--ember);background:var(--ember);color:#fff;font-weight:700;cursor:pointer}
+    .google{background:#fff;color:var(--ink);border-color:var(--line);margin-top:10px}
+    .primary:disabled,.google:disabled{opacity:.55;cursor:wait}
+    .notice{display:none;padding:12px;border:1px solid var(--line);margin-bottom:14px;font-size:13px}
+    .notice.error{display:block;background:#f5dddc;border-color:#e3b4b4;color:#a72d35}
+    .notice.success{display:block;background:#e8f2ea;border-color:#b9d4c1;color:#286a49}
+    .guest{display:block;text-align:center;margin-top:18px;color:var(--muted);font-size:13px}
+    .hide{display:none!important}
+    @media(max-width:760px){.shell{grid-template-columns:1fr}.brand{display:none}.panel{padding:28px 22px;min-height:640px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="brand">
+      <img src="/assets/logo.png" alt="Yodla">
+      <div class="eyebrow">Yodla</div>
+      <h1>Good bottles. Good company.</h1>
+      <p>Sign in to save your details, track gifts, or manage the shelf. You can still browse and check out as a guest.</p>
+    </section>
+    <section class="panel">
+      <div id="authLoading"><p class="caption">Checking your session…</p></div>
+      <div id="authForm" class="hide">
+        <h2 id="formTitle">Welcome back</h2>
+        <p class="caption" id="formCaption">Sign in to your Yodla account.</p>
+        <div class="tabs">
+          <button class="tab active" id="signinTab" type="button">Sign in</button>
+          <button class="tab" id="signupTab" type="button">Create account</button>
+        </div>
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+        <form id="signinForm">
+          <div class="field"><label for="signinEmail">Email</label><input id="signinEmail" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="signinPassword">Password</label><input id="signinPassword" type="password" autocomplete="current-password" required minlength="8"></div>
+          <button class="primary" id="signinButton" type="submit">Sign in</button>
+          <button class="google" id="googleSignin" type="button">Continue with Google</button>
+        </form>
+        <form id="signupForm" class="hide">
+          <div class="field"><label for="signupName">Full name</label><input id="signupName" autocomplete="name" required minlength="2"></div>
+          <div class="field"><label for="signupEmail">Email</label><input id="signupEmail" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="signupPassword">Password</label><input id="signupPassword" type="password" autocomplete="new-password" required minlength="8"></div>
+          <button class="primary" id="signupButton" type="submit">Create account</button>
+          <button class="google" id="googleSignup" type="button">Continue with Google</button>
+        </form>
+        <a class="guest" href="/index.html">Continue as guest</a>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/js/login.js"></script>
+</body>
+</html>

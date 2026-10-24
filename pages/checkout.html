@@ -13,18 +13,28 @@
   <header class="site-header" data-site-header></header>
   <main class="checkout-page shell" data-checkout-view>
     <section>
-      <div class="page-intro page-intro--compact"><span class="eyebrow">Final stretch</span><h1>Delivery details.</h1><p>This checkout is a prototype; no payment will be taken.</p></div>
+      <div class="page-intro page-intro--compact" data-checkout-intro>
+        <span class="eyebrow">Final stretch</span>
+        <h1 data-checkout-title>Delivery details.</h1>
+        <p data-checkout-lede>Checkout as a guest or while signed in. Paystack is used when configured; otherwise mock payment completes the order.</p>
+      </div>
       <form class="checkout-form" data-checkout-form>
-        <fieldset><legend>Contact</legend><label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@email.com"></label><label>Phone<input type="tel" name="phone" required autocomplete="tel" inputmode="tel" placeholder="0800 000 0000"></label></fieldset>
-        <fieldset><legend>Delivery</legend><div class="field-pair"><label>First name<input name="firstName" required autocomplete="given-name"></label><label>Last name<input name="lastName" required autocomplete="family-name"></label></div><label>Address<input name="address" required autocomplete="street-address" placeholder="Street and house number"></label><div class="field-pair"><label>City<select name="city" required><option value="">Choose city</option><option>Lagos</option><option>Abuja</option><option>Ibadan</option><option>Port Harcourt</option></select></label><label>Delivery note<input name="note" placeholder="Gate, landmark, timing"></label></div></fieldset>
+        <fieldset><legend data-checkout-contact-legend>Contact</legend><label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@email.com"></label><label>Phone<input type="tel" name="phone" required autocomplete="tel" inputmode="tel" placeholder="0800 000 0000"></label></fieldset>
+        <fieldset data-checkout-delivery-fieldset><legend>Delivery</legend><div class="field-pair"><label>First name<input name="firstName" required autocomplete="given-name"></label><label>Last name<input name="lastName" required autocomplete="family-name"></label></div><label>Address<input name="address" required autocomplete="street-address" placeholder="Street and house number"></label><div class="field-pair"><label>State<select name="city" required><option value="">Choose state</option></select></label><label>Delivery note<input name="note" placeholder="Gate, landmark, timing"></label></div></fieldset>
+        <fieldset data-gift-buyer-fieldset hidden>
+          <legend>Buyer</legend>
+          <div class="field-pair"><label>First name<input name="giftFirstName" autocomplete="given-name"></label><label>Last name<input name="giftLastName" autocomplete="family-name"></label></div>
+          <p class="gift-builder__hint">You’re paying. Each recipient already has their own delivery address from the gift builder.</p>
+        </fieldset>
         <div data-checkout-status aria-live="polite"></div>
-        <button class="button button--ember button--wide button--large" type="submit">Place prototype order <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
-        <small>By continuing, you confirm the recipient is 18 or older.</small>
+        <button class="button button--ember button--wide button--large" type="submit">Pay &amp; place order <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+        <small data-checkout-legal>By continuing, you confirm the recipient is 18 or older. Guests can order without signing in.</small>
       </form>
     </section>
     <details class="order-panel" data-order-panel>
       <summary><span><small>Review</small> Order summary</span><b aria-hidden="true">+</b></summary>
       <div data-checkout-summary></div>
+      <div data-gift-checkout-summary hidden></div>
     </details>
   </main>
   <footer data-site-footer></footer>
