@@ -19,7 +19,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = .92;
   renderer.domElement.tabIndex = 0;
-  renderer.domElement.setAttribute('aria-label', 'Wine boutique. Click the floor to move, drag to look, and click a bottle to choose it. Section buttons also work with Tab and Enter.');
+  renderer.domElement.setAttribute('aria-label', 'Yodla drinks store. Click the floor to move, drag to look, and click a bottle to choose it. Section buttons also work with Tab and Enter.');
   container.append(renderer.domElement);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const environmentScene = new RoomEnvironment();
@@ -90,6 +90,14 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       if (sub) { ctx.font = '19px Arial'; ctx.letterSpacing = '5px'; ctx.fillText(sub, w / 2, 190); }
     });
     return new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture, toneMapped:false }));
+  }
+  // Use the website wordmark without redrawing its lettering or adding another emblem.
+  const brandTextures = Object.fromEntries(['dark', 'light'].map(tone => {
+    const texture = new THREE.TextureLoader().load(tone === 'light' ? '/assets/brand/yodla-wordmark-light.png' : '/assets/brand/yodla-wordmark-4096.png');
+    texture.colorSpace = THREE.SRGBColorSpace; textures.push(texture); return [tone, texture];
+  }));
+  function brandMark(width, light = false) {
+    return new THREE.Mesh(new THREE.PlaneGeometry(width, width * 815 / 4096), new THREE.MeshBasicMaterial({map: brandTextures[light ? 'light' : 'dark'], transparent: true, depthWrite: false, toneMapped: false}));
   }
   function sign(text, sub, x, y, z, width = 3.2, rotation = 0) {
     const group = new THREE.Group(); group.position.set(x, y, z); group.rotation.y = rotation; scene.add(group);
@@ -165,7 +173,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   const arch = new THREE.Mesh(new THREE.TorusGeometry(2.2, .045, 8, 64, Math.PI), brass);
   arch.position.set(-2.7, 2.7, -9.67); scene.add(arch);
   for (const x of [-4.9, -.5]) box(.09, 2.7, .08, brass, x, 1.35, -9.67);
-  const wordmark = textPanel('yodla', 'A BOTTLE. A MOMENT.', 3.6, 1, { fontSize: 124 });
+  const wordmark = brandMark(3.2, true); wordmark.name = 'yodla-wall-wordmark';
   wordmark.position.set(-2.7, 2.3, -9.65); scene.add(wordmark);
   sign('THE CELLAR', 'EXPLORE AT YOUR OWN PACE', -2.7, 1.15, -9.63, 2.8);
 
@@ -277,7 +285,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     loop.scale.set(1.6,.7,1);loop.rotation.set(.55,side*.35,side*.25);loop.position.set(side*.12,.46,0);giftBox.add(loop);
     const tail=box(.075,.008,.22,satin,side*.09,.411,.13,giftBox);tail.rotation.y=side*.38;
   }
-  const plaque=textPanel('YODLA','',.24,.075,{background:'#321823',color:'#bda57c',fontSize:65});
+  const plaque=brandMark(.24,true);
   plaque.position.set(0,.24,.306);giftBox.add(plaque);
   const giftRibbonTop=box(.11, .005, .66, brass, 0, .419, 0, giftBox);
   const giftRibbonFront=box(.11, .35, .012, brass, 0, .18, .31, giftBox);
@@ -359,16 +367,10 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   }
   addCashier('gift','Nneka',3.4,-8.9);
   addCashier('checkout','Daniel',-4,5.7,Math.PI);
-  const logoTexture=new THREE.TextureLoader().load('/assets/brand/yodla-wordmark-4096-white.png');logoTexture.colorSpace=THREE.SRGBColorSpace;textures.push(logoTexture);
   for(const [x,z,rotation] of [[3.75,-7.484,0],[-3.95,4.263,Math.PI]]){
-    const logo=new THREE.Mesh(new THREE.PlaneGeometry(.85,.19),new THREE.MeshBasicMaterial({map:logoTexture,transparent:true,depthWrite:false}));logo.position.set(x,.58,z);logo.rotation.y=rotation;scene.add(logo);
+    const logo=brandMark(.85);logo.position.set(x,.58,z);logo.rotation.y=rotation;scene.add(logo);
   }
 
-  // Use the original cup emblem beside the retained cellar wordmark.
-  // Use the original PNG directly. Nested-image SVGs cannot be decoded reliably as WebGL textures.
-  const cupTexture=new THREE.TextureLoader().load('/assets/logo.png');cupTexture.colorSpace=THREE.SRGBColorSpace;
-  cupTexture.repeat.set(69/150,64/150);cupTexture.offset.set(40/150,54/150);textures.push(cupTexture);
-  const cup=new THREE.Mesh(new THREE.PlaneGeometry(.76,.76),new THREE.MeshBasicMaterial({map:cupTexture,toneMapped:false}));cup.position.set(-4.35,2.3,-9.61);cup.name='yodla-cup-emblem';scene.add(cup);
   // Limestone shopfront, a wine-coloured canopy, pavement and window displays.
   const facade=new THREE.Group();facade.name='boutique-exterior';scene.add(facade);
   const exteriorStone=mat('#c5b99f',.85),pavement=mat('#a29c8e',.9),canopy=mat('#3e1c29',.7);
@@ -377,8 +379,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   box(14,.42,.09,canopy,0,3.48,10.35,facade);
   box(14,.035,.045,brass,0,3.27,10.4,facade);
   box(14,.65,.16,canopy,0,4.12,9.42,facade);
-  const facadeMark=textPanel('yodla','',2.9,.64,{background:'#3e1c29',color:'#f3e4c6',fontSize:180});facadeMark.position.set(.1,4.14,9.52);facade.add(facadeMark);
-  const facadeCup=new THREE.Mesh(new THREE.PlaneGeometry(.57,.57),new THREE.MeshBasicMaterial({map:cupTexture,toneMapped:false}));facadeCup.position.set(-1.95,4.14,9.52);facade.add(facadeCup);
+  const facadeMark=brandMark(2.9,true);facadeMark.name='yodla-storefront-wordmark';facadeMark.position.set(0,4.14,9.52);facade.add(facadeMark);
   const collection=textPanel('WINE  ·  SPIRITS  ·  GIFTING','',2.8,.15,{background:'#3e1c29',color:'#f3ddb1',fontSize:45});collection.position.set(0,3.49,10.41);facade.add(collection);
   for(const side of [-1,1]){
     box(1.2,5.05,1.4,exteriorStone,side*7.35,2.525,8.9,facade);
@@ -443,7 +444,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   function parcelTag(person,message){
     const texture=mapCanvas(1024,768,(ctx,w,h)=>{
       ctx.fillStyle='#f2e8d3';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#a38457';ctx.lineWidth=4;ctx.strokeRect(22,22,w-44,h-44);
-      ctx.fillStyle='#29151b';ctx.textAlign='center';ctx.font='bold 58px Georgia';ctx.fillText('yodla',w/2,100);
+      ctx.fillStyle='#29151b';ctx.textAlign='center';
       ctx.font='26px Arial';ctx.fillText('A GIFT FOR',w/2,175);
       const wrap=(value,max)=>{const words=String(value||'').split(/\s+/),lines=[''];for(const word of words){let i=lines.length-1;if((lines[i]+' '+word).length>max)lines.push(word);else lines[i]+=(lines[i]?' ':'')+word;}return lines;};
       ctx.font='bold 84px Georgia';wrap(person.name||person.firstName||'You',22).slice(0,3).forEach((line,i)=>ctx.fillText(line,w/2,270+i*83,930));
@@ -451,7 +452,8 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       ctx.font='20px Arial';ctx.fillText('PREPARED WITH CARE BY NNEKA',w/2,725);
     });
     const material=new THREE.MeshBasicMaterial({map:texture,toneMapped:false,side:THREE.DoubleSide});orderAssets.push(material);
-    return new THREE.Mesh(new THREE.PlaneGeometry(.58,.43),material);
+    const tag=new THREE.Mesh(new THREE.PlaneGeometry(.58,.43),material);
+    const logo=brandMark(.18);logo.position.set(0,.165,.001);tag.add(logo);return tag;
   }
   function beginOrder(order){
     endOrder();orderData=order;orderRoot.visible=true;carried.visible=false;giftBox.visible=false;
@@ -470,7 +472,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       const tie=new THREE.Mesh(new THREE.TorusGeometry(.055,.007,8,24),brass);tie.position.set(.17,h+.07,0);tie.rotation.x=Math.PI/2;g.add(tie);tie.visible=false;
       if(order.mode==='checkout'){
         for(const side of [-1,1]){const handle=new THREE.Mesh(new THREE.TorusGeometry(.12,.012,8,24,Math.PI),darkWood);handle.position.set(0,h,side*d/2);g.add(handle);}
-        const mark=textPanel('yodla','',.3,.13,{background:'#eee0c7',color:'#4c202c',fontSize:85});mark.position.set(0,.2,d/2+.012);g.add(mark);
+        const mark=brandMark(.3);mark.position.set(0,.2,d/2+.012);g.add(mark);
       }
       g.name="parcel-"+i;return {group:g,home:g.position.clone(),top,tag,tie};
     });
@@ -479,11 +481,11 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     pos.traverse(o=>{if(o.isMesh){o.userData.orderPOS=true;interactives.push(o);}});
     receipt=new THREE.Group();receipt.position.set(-.02,1.2,.98);orderRoot.add(receipt);receipt.visible=false;
     const receiptMap=mapCanvas(512,1024,(ctx,w,h)=>{
-      ctx.fillStyle='#f7f2e7';ctx.fillRect(0,0,w,h);ctx.fillStyle='#332520';ctx.textAlign='center';ctx.font='54px Georgia';ctx.fillText('yodla',w/2,85);ctx.font='24px monospace';ctx.fillText('SAMPLE RECEIPT',w/2,145);ctx.font='17px monospace';ctx.fillText('SIMULATED PAYMENT / NO ORDER',w/2,185);let y=240;ctx.textAlign='left';
+      ctx.fillStyle='#f7f2e7';ctx.fillRect(0,0,w,h);ctx.fillStyle='#332520';ctx.textAlign='center';ctx.font='24px monospace';ctx.fillText('SAMPLE RECEIPT',w/2,145);ctx.font='17px monospace';ctx.fillText('SIMULATED PAYMENT / NO ORDER',w/2,185);let y=240;ctx.textAlign='left';
       for(const parcel of order.parcels){if(order.mode==='gift'){ctx.fillText('For '+parcel.person.name,24,y,460);y+=35;}for(const line of parcel.lines){ctx.fillText(line.name+' x '+line.quantity,24,y,460);y+=35;}if(y>800)break;}
       ctx.fillText('TOTAL NGN '+order.total.toLocaleString('en-NG'),24,900);ctx.fillText('THANK YOU',24,965);
     });const receiptMaterial=new THREE.MeshBasicMaterial({map:receiptMap,toneMapped:false});orderAssets.push(receiptMaterial);
-    const receiptLabel=new THREE.Mesh(new THREE.PlaneGeometry(.29,.58),receiptMaterial);receiptLabel.rotation.x=-Math.PI/2;receipt.add(receiptLabel);
+    const receiptLabel=new THREE.Mesh(new THREE.PlaneGeometry(.29,.58),receiptMaterial);receiptLabel.rotation.x=-Math.PI/2;receipt.add(receiptLabel);const receiptLogo=brandMark(.17);receiptLogo.position.set(0,.248,.001);receiptLabel.add(receiptLogo);
     renderer.shadowMap.needsUpdate=true;
   }
   function positionArm(rig,arm,target){

@@ -27,3 +27,6 @@ body:not(.entered) .store-map,body:not(.entered) .store-location,body:not(.enter
 
 .fallback-mode .welcome{top:auto}
 body:not(.entered) #scene{background:#b9b29f url('/assets/brand/boutique-exterior.png') center/cover}body:not(.entered) .store-address{background:#2f2028e8;padding:6px 10px;text-shadow:none}@media(max-width:760px){body:not(.entered) #scene,.fallback-mode:not(.entered) #scene{background-image:url('/assets/brand/boutique-exterior.png'),linear-gradient(#b9b29f,#655d4f);background-repeat:no-repeat;background-size:100% auto,cover;background-position:center 112px,center}body:not(.entered) .store-address{left:4%;font-size:7px;letter-spacing:.6px;padding:5px 7px}.fallback-mode:not(.entered) .loading.error{top:140px;max-width:88%;font-size:8px;padding:5px 7px}}
+
+/* Keep the website logo colours and proportions on dark surfaces. */
+.brand-logo{display:block;width:112px;height:auto;object-fit:contain}.brand-logo--light{filter:none!important}.store-goodbye>img.brand-logo{width:180px;height:auto;margin:0 auto 25px}.fallback-wall img{filter:none;background:#f2ede3;padding:8px}
