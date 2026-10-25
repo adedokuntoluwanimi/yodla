@@ -33,7 +33,8 @@ for (const mobile of [false,true]) test(`room simulation on ${mobile?'mobile':'d
   const wordmark=lastScene.getObjectByName('yodla-wall-wordmark');assert.equal(wordmark.material.map.userData.source,'/assets/brand/yodla-wordmark-light.png');assert.equal(lastScene.getObjectByName('yodla-cup-emblem'),undefined);
   const advance=seconds=>{for(let t=0;t<seconds;t+=.04){clock+=40;frames.shift()?.(clock);}};
   const idleRenders=renders;advance(1);assert.equal(renders,idleRenders,'idle street view does not redraw');
-  room.enter();assert.equal(chimes,0,'the bell waits until the customer reaches the door');advance(6);assert.equal(chimes,1);assert.ok(lastCamera.position.z<8);
+  room.enter();assert.equal(chimes,0,'the bell waits until the customer reaches the door');
+  if(mobile) { for(let i=0;i<12;i++)frames.shift()?.(clock+=500); } else advance(6);assert.equal(chimes,1);assert.ok(lastCamera.position.z<8);
   const crossing=positions.filter(p=>p.position.z>=9&&p.position.z<=10.1);assert.ok(crossing.length>0);assert.ok(crossing.every(p=>Math.abs(p.position.x)<.01&&p.doorAngle<-1.2),'the camera passes through an open door');
   room.pause(true);room.beginOrder(order);
   for(let elapsed=0;elapsed<37;elapsed+=.15){room.updateOrder(orderFrame(order,elapsed,{paid:elapsed>20,paidElapsed:Math.max(0,elapsed-20)}));frames.shift()?.(clock+=150);lastScene.updateMatrixWorld(true);const tag=lastScene.getObjectByName('gift-tag-0');assert.equal(tag.material.toneMapped,false);assert.equal(tag.material.isMeshBasicMaterial,true);lastScene.traverse(o=>{assert.ok(o.position.toArray().every(Number.isFinite));assert.ok(o.quaternion.toArray().every(Number.isFinite));});}

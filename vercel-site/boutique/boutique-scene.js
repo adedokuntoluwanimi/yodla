@@ -701,12 +701,13 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   function tick(now) {
     if (disposed) return;
     frame = requestAnimationFrame(tick);
-    const dt = Math.min((now - last) / 1000, .04); last = now;
+    const elapsed = Math.max(0,(now-last)/1000);
+    const dt = Math.min(elapsed, .04); last = now;
     if (document.hidden) return;
-    doorTime=Math.max(0,doorTime-dt);const angle=doorHold||doorTime>1?-1.45:0;doorHinge.rotation.y=THREE.MathUtils.damp(doorHinge.rotation.y,angle,5,dt);bellPivot.rotation.z=doorTime>0&&!reduced?Math.sin(doorTime*18)*Math.min(.35,doorTime*.12):0;
+    doorTime=Math.max(0,doorTime-elapsed);const angle=doorHold||doorTime>1?-1.45:0;doorHinge.rotation.y=THREE.MathUtils.damp(doorHinge.rotation.y,angle,5,elapsed);bellPivot.rotation.z=doorTime>0&&!reduced?Math.sin(doorTime*18)*Math.min(.35,doorTime*.12):0;
     if (!paused) {
       if(travel){
-        travel.elapsed=Math.min(travel.duration,travel.elapsed+dt);
+        travel.elapsed=Math.min(travel.duration,travel.elapsed+elapsed);
         const t=travel.elapsed/travel.duration,ease=t*t*t*(t*(t*6-15)+10);
         const position=travel.curve.getPointAt(ease);camera.position.copy(position);
         if(travel.entry&&!travel.bell&&position.z<=10.1){travel.bell=true;onDoorBell?.();}
@@ -739,7 +740,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     if ((renderDirty || active) && now-lastRender >= frameInterval) {
       const started=performance.now(); renderer.render(scene,camera); const cost=performance.now()-started;
       // Back off only after sustained expensive frames, then keep the chosen resolution stable.
-      slowFrames = cost > (mobile ? 28 : 22) ? slowFrames + 1 : Math.max(0,slowFrames-1);
+      slowFrames = (cost > (mobile ? 28 : 22) || (active && elapsed > .09)) ? slowFrames + 1 : Math.max(0,slowFrames-1);
       if (slowFrames >= 12 && pixelRatio > .85) { pixelRatio=Math.max(.85,pixelRatio-.15);renderer.setPixelRatio(pixelRatio);slowFrames=0;renderDirty=true; }
       else renderDirty=false;
       lastRender=now;
