@@ -10,8 +10,11 @@ import { STATIONS, unavailableGiftLines, giftCost } from './boutique-model.js';
 
 const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const safeImage = value => {
+const bundledImages = new Map(PRODUCTS.map(product => [new URL(product.image, location.origin).href, product.id]));
+const safeImage = (value, size = 480) => {
   const url = new URL(value || '/assets/gifting/gift-selection.webp', location.origin);
+  const bundledId = bundledImages.get(url.href);
+  if (bundledId) return `/assets/products/responsive/${bundledId}-${size}.webp`;
   return ['http:', 'https:'].includes(url.protocol) ? esc(url.href) : '/assets/gifting/gift-selection.webp';
 };
 const dialog = $('#store-dialog'), panel = $('#panel-content');
@@ -107,7 +110,7 @@ function productPanel() {
   if (!p) return heading('THE CELLAR', 'Bottle unavailable', 'This bottle has left the shelf. Choose another from the bottle list.');
   const location = stored('localStorage', 'yodla-location-v2') || 'Lagos';
   const available = getAvailability(p, catalogLocationForState(location)) !== 'unavailable';
-  return `${heading(esc(p.category), esc(p.name))}<img class="product-detail-image" src="${safeImage(p.image)}" alt="${esc(p.name)}"><div class="product-specs"><span>${esc(p.volume)}</span><span>${esc(p.abv)} ABV</span><span>${esc(p.subcategory)}</span></div><p class="product-description">${esc(p.description)}</p><div class="product-notes">${(p.notes || []).map(n => `<span>${esc(n)}</span>`).join('')}</div><p class="product-price">${money(p.price)}</p>${p.prototype ? '<p class="compact-note">Concept bottle from the bundled catalogue. Final availability is confirmed at checkout.</p>' : ''}${purposeControls()}${shoppingFor === 'self' ? `<label>Delivery state<select id="self-state">${NIGERIAN_STATES.map(s => `<option ${s === location ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label><div class="dialog-actions"><button class="primary" data-add-self="${esc(p.id)}" ${available ? '' : 'disabled'}>${available ? 'Add to basket' : 'Unavailable in this state'} <span>+</span></button></div>` : giftProductControls(p)}<div class="dialog-actions sticky-actions"><button class="secondary" data-panel-back>Back to bottles</button><button class="secondary" data-visit="${shoppingFor==='gift'?'gifts':'checkout'}">${shoppingFor==='gift'?'Review gift':'Review basket'} ${icon('arrow')}</button></div>`;
+  return `${heading(esc(p.category), esc(p.name))}<img class="product-detail-image" decoding="async" src="${safeImage(p.image,900)}" alt="${esc(p.name)}"><div class="product-specs"><span>${esc(p.volume)}</span><span>${esc(p.abv)} ABV</span><span>${esc(p.subcategory)}</span></div><p class="product-description">${esc(p.description)}</p><div class="product-notes">${(p.notes || []).map(n => `<span>${esc(n)}</span>`).join('')}</div><p class="product-price">${money(p.price)}</p>${p.prototype ? '<p class="compact-note">Concept bottle from the bundled catalogue. Final availability is confirmed at checkout.</p>' : ''}${purposeControls()}${shoppingFor === 'self' ? `<label>Delivery state<select id="self-state">${NIGERIAN_STATES.map(s => `<option ${s === location ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label><div class="dialog-actions"><button class="primary" data-add-self="${esc(p.id)}" ${available ? '' : 'disabled'}>${available ? 'Add to basket' : 'Unavailable in this state'} <span>+</span></button></div>` : giftProductControls(p)}<div class="dialog-actions sticky-actions"><button class="secondary" data-panel-back>Back to bottles</button><button class="secondary" data-visit="${shoppingFor==='gift'?'gifts':'checkout'}">${shoppingFor==='gift'?'Review gift':'Review basket'} ${icon('arrow')}</button></div>`;
 }
 function giftProductControls(p) {
   const draft = readGiftDraft();
@@ -124,7 +127,7 @@ function cataloguePanel() {
 }
 function bottleRows() {
   const matches = PRODUCTS.filter(p => (!shelfSection || (shelfSection==='wines' ? /wine|champagne/i.test(p.category) : !/wine|champagne/i.test(p.category))) && (filterCategory === 'All' || p.category === filterCategory) && `${p.name} ${p.brand}`.toLowerCase().includes(filterQuery.toLowerCase()));
-  return matches.map(p => `<button class="bottle-row" data-product="${esc(p.id)}"><img src="${safeImage(p.image)}" alt="" loading="lazy"><span><strong>${esc(p.name)}</strong><small>${esc(p.category)} · ${esc(p.volume)}</small><b>${money(p.price)}</b></span><span aria-hidden="true" style="flex:0">↗</span></button>`).join('') || '<p class="empty">No bottles match that search.</p>';
+  return matches.map(p => `<button class="bottle-row" data-product="${esc(p.id)}"><img src="${safeImage(p.image)}" alt="" loading="lazy" decoding="async" width="60" height="84"><span><strong>${esc(p.name)}</strong><small>${esc(p.category)} · ${esc(p.volume)}</small><b>${money(p.price)}</b></span><span aria-hidden="true" style="flex:0">↗</span></button>`).join('') || '<p class="empty">No bottles match that search.</p>';
 }
 function basketPanel() {
   updateBasket();
@@ -156,7 +159,7 @@ function giftBottlesPanel(draft) {
   const lines = draft.items.filter(i => i.recipientId === giftPerson);
   return `<div class="recipient-switcher">${recipientSelect(draft)}<small>${draft.recipients.filter(p=>draft.items.some(i=>i.recipientId===p.id)).length} of ${draft.recipients.length} recipients have bottles</small></div><div class="selected-bottles">${lines.map(i => `<div class="selected-line"><span>${esc(getProduct(i.productId)?.name || 'Unavailable bottle')}</span><div class="quantity"><button data-gift-qty="${esc(i.productId)}" data-delta="-1" aria-label="Reduce ${esc(getProduct(i.productId)?.name)}">−</button><span>${i.quantity}</span><button data-gift-qty="${esc(i.productId)}" data-delta="1" aria-label="Increase ${esc(getProduct(i.productId)?.name)}" ${i.quantity >= 99 ? 'disabled' : ''}>+</button></div></div>`).join('') || '<p class="empty">Choose something they’ll love.</p>'}</div><div class="dialog-actions"><button class="secondary" id="browse-store">Choose from the shelves ↗</button></div><label class="gift-search-label" for="gift-search">Find a bottle<input id="gift-search" type="search" placeholder="Search bottle or brand" value="${esc(giftQuery)}"></label><div class="product-list gift-product-list">${PRODUCTS.map(p => {
     const available = getAvailability(p, catalogLocationForState(person.state)) !== 'unavailable';
-    return `<button class="bottle-row" data-search="${esc(`${p.name} ${p.brand}`.toLowerCase())}" ${giftQuery && !`${p.name} ${p.brand}`.toLowerCase().includes(giftQuery.toLowerCase())?'hidden':''} data-add-gift="${esc(p.id)}" ${available ? '' : 'disabled'}><img src="${safeImage(p.image)}" alt="" loading="lazy"><span><strong>${esc(p.name)}</strong><small>${available ? money(p.price) : `Unavailable in ${esc(person.state)}`}</small></span><b>${available ? `${draft.items.find(i=>i.recipientId===giftPerson && i.productId===p.id)?.quantity || ''} ${icon('plus')}` : 'Unavailable'}</b></button>`;
+    return `<button class="bottle-row" data-search="${esc(`${p.name} ${p.brand}`.toLowerCase())}" ${giftQuery && !`${p.name} ${p.brand}`.toLowerCase().includes(giftQuery.toLowerCase())?'hidden':''} data-add-gift="${esc(p.id)}" ${available ? '' : 'disabled'}><img src="${safeImage(p.image)}" alt="" loading="lazy" decoding="async" width="60" height="84"><span><strong>${esc(p.name)}</strong><small>${available ? money(p.price) : `Unavailable in ${esc(person.state)}`}</small></span><b>${available ? `${draft.items.find(i=>i.recipientId===giftPerson && i.productId===p.id)?.quantity || ''} ${icon('plus')}` : 'Unavailable'}</b></button>`;
   }).join('')}</div><p class="empty" id="gift-search-empty" hidden>No bottles match your search.</p><div class="dialog-actions sticky-actions"><button class="secondary" data-gift-step="people">People</button><button class="primary" data-gift-step="wrap">Presentation &amp; review ${icon('arrow')}</button></div>`;
 }
 function wrappingPanel(draft) {
@@ -433,16 +436,19 @@ function fallback() {
 async function boot() {
   updateBasket(); setMotion();
   if (matchMedia('(pointer: coarse)').matches || innerWidth <= 760) $('#movement-hint').textContent = 'Tap a section below to explore';
+  const sceneModule = import('./boutique-scene.js');
+  // Attach rejection handling immediately while the catalogue request is in flight.
+  sceneModule.catch(() => {});
   const catalogueReady=loadPublishedContent((url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(5000) }));
   await catalogueReady;
   if(content.meta.stale)$('#catalogue-note').textContent='Showing the bundled collection. Prices and stock are confirmed at checkout.';
   try {
-    const { createBoutique } = await import('./boutique-scene.js');
+    const { createBoutique } = await sceneModule;
     scene = createBoutique({ container: $('#scene'), products: PRODUCTS, reduceMotion: reduced,onEntry:active=>{document.body.classList.toggle('entering-store',active);if(active)$('#travel-status').textContent='Stepping inside…';},onDoorBell:()=>doorBell.ring().catch(()=>{}),
       onSelect: id => { document.body.classList.add('entered'); $('#welcome').inert = true; openPanel('product', id); },
       onStation: arrive,
       onMove: () => { document.body.classList.add('entered'); $('#welcome').inert=true; },
-      onHover: label => { $('#scene-label').hidden = !label; $('#scene-label').textContent = label; },
+      onHover: label => { if ($('#scene-label').textContent !== label) { $('#scene-label').hidden = !label; $('#scene-label').textContent = label; } },
       onTravel: moving=>{if(!moving)$('#travel-status').textContent='';},
       onPosition: (x,z) => { $('#map-you').style.left = `${(x + 7) / 14 * 100}%`; $('#map-you').style.top = `${(z + 10) / 20 * 100}%`; },
     });

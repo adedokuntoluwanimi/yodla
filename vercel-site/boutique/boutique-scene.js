@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { batchStaticMeshes } from './boutique-performance.js';
 import { parcelComplete } from './boutique-order.js';
 import { RoomEnvironment } from './vendor/three/RoomEnvironment.js';
 import { moveWithCollision, routeToStation, canStand, STATIONS } from './boutique-model.js';
@@ -10,10 +11,13 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   const camera = new THREE.PerspectiveCamera(58, 1, .08, 65);
   camera.position.set(2.8,1.9,18.1);
   camera.rotation.order = 'YXZ';
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer: coarse)').matches ? 1.5 : 1.8));
+  const mobile = matchMedia('(pointer: coarse)').matches;
+  let pixelRatio = Math.min(devicePixelRatio, mobile ? 1.15 : 1.5);
+  let renderDirty = true, lastHover = 0;
+  const renderer = new THREE.WebGLRenderer({ antialias: !mobile, alpha: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(pixelRatio);
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !mobile;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -434,6 +438,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     disposable.forEach(g=>g.dispose());group.clear();
   }
   function setShoppingBasket(lines){
+    renderDirty = true;
     clearGroup(shoppingDrinks);let index=0;
     for(const product of lines)for(let i=0;i<product.quantity && index<12;i++,index++){
       const drink=bottle(product,-.24+(index%4)*.16,.05,-.11+Math.floor(index/4)*.1,shoppingDrinks,index,.48);
@@ -549,7 +554,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     const shadowKey=state.stage+':'+state.packed;if(shadowKey!==lastOrderShadow){renderer.shadowMap.needsUpdate=true;lastOrderShadow=shadowKey;}
   }
   function endOrder(){
-    orderData=null;currentOrderFrame=null;customerHands.visible=false;orderRoot.visible=false;giftBox.visible=true;clearGroup(orderRoot);orderBottleMeshes=[];orderParcels=[];
+    renderDirty=true;orderData=null;currentOrderFrame=null;customerHands.visible=false;orderRoot.visible=false;giftBox.visible=true;clearGroup(orderRoot);orderBottleMeshes=[];orderParcels=[];
     for(let i=interactives.length-1;i>=0;i--)if(interactives[i].userData.orderPOS)interactives.splice(i,1);
     orderAssets.splice(0).forEach(m=>{if(m.map){const index=textures.indexOf(m.map);if(index>=0)textures.splice(index,1);m.map.dispose();}m.dispose();});
     for(const rig of Object.values(cashierRig)){rig.host.position.copy(rig.home);rig.arms.forEach(a=>a.shoulder.visible=true);rig.workingArms.forEach(a=>{a.upper.visible=a.fore.visible=a.hand.visible=false;a.fingers.forEach(f=>f.visible=false);});}
@@ -578,7 +583,10 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   }
   const abort = new AbortController(), eventOptions = { signal: abort.signal };
   const canvas = renderer.domElement;
+  const batching = batchStaticMeshes(THREE, scene, [doorHinge, giftBox, camera, orderRoot, ...Object.values(cashierRig).map(rig => rig.host)], interactives);
+  scene.userData.performance = batching;
   function resize() {
+    renderDirty = true;
     camera.aspect = container.clientWidth / container.clientHeight;
     if(!entered){camera.position.set(camera.aspect<.8?0:2.8,1.9,camera.aspect<.8?19.2:18.1);yaw=camera.aspect<.8?0:.43;pitch=camera.aspect<.8?-.13:-.065;}
     camera.fov = camera.aspect < .8 ? 69 : 58; camera.updateProjectionMatrix();
@@ -604,6 +612,9 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
   canvas.addEventListener('pointermove', e => {
     if(!entered||travel?.entry)return;
     if (paused) return;
+    renderDirty = true;
+    if (!drag && performance.now() - lastHover < 70) return;
+    lastHover = performance.now();
     if (drag) {
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       drag.moved ||= Math.hypot(dx, dy) > 5;
@@ -685,7 +696,8 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
     for(let i=1;i<points.length;i++)curve.add(new THREE.LineCurve3(points[i-1],points[i]));
     travel={entry:true,id:'entrance',curve,elapsed:0,duration:reduced?.25:4.5,bell:false,fromYaw:yaw,fromPitch:pitch,targetYaw:0,targetPitch:-.025};onTravel?.(true);
   }
-  function pause(value) {paused=value;drag=null;moveMarker.visible=false;onHover?.('');}
+  function pause(value) {renderDirty=true;paused=value;drag=null;moveMarker.visible=false;onHover?.('');}
+  const lastPosition=new THREE.Vector3(Infinity,Infinity,Infinity);let lastPitch=Infinity,lastYaw=Infinity,slowFrames=0;
   function tick(now) {
     if (disposed) return;
     frame = requestAnimationFrame(tick);
@@ -704,7 +716,7 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
           else{onTravel?.(false);if(id)onStation?.(id);}
         }
       }
-      if (!reduced && !entered) { yaw = (camera.aspect<.8?0:.43)+Math.sin(now*.0001)*.008; }
+      // Hold the street view still so idle devices do not redraw continuously.
     }
     const giftPhase=cashierRig.gift.phase;
     lid.position.y=THREE.MathUtils.damp(lid.position.y,giftPhase>0 && giftPhase<.5?.72:.375,6,dt);
@@ -720,9 +732,18 @@ export function createBoutique({ container, products, onSelect, onStation, onPos
       });
     }
     camera.rotation.set(pitch, yaw, 0);
-    onPosition?.(camera.position.x, camera.position.z);
-    const frameInterval=matchMedia('(pointer: coarse)').matches?1000/30:1000/60;
-    if(now-lastRender>=frameInterval){renderer.render(scene,camera);lastRender=now;}
+    const changed = !camera.position.equals(lastPosition) || camera.rotation.x !== lastPitch || camera.rotation.y !== lastYaw;
+    if (changed) { onPosition?.(camera.position.x, camera.position.z); lastPosition.copy(camera.position); lastPitch=camera.rotation.x; lastYaw=camera.rotation.y; renderDirty=true; }
+    const active = Boolean(travel || drag || orderData || doorTime > 0 || Math.abs(doorHinge.rotation.y-angle) > .001);
+    const frameInterval = mobile ? 1000/30 : 1000/60;
+    if ((renderDirty || active) && now-lastRender >= frameInterval) {
+      const started=performance.now(); renderer.render(scene,camera); const cost=performance.now()-started;
+      // Back off only after sustained expensive frames, then keep the chosen resolution stable.
+      slowFrames = cost > (mobile ? 28 : 22) ? slowFrames + 1 : Math.max(0,slowFrames-1);
+      if (slowFrames >= 12 && pixelRatio > .85) { pixelRatio=Math.max(.85,pixelRatio-.15);renderer.setPixelRatio(pixelRatio);slowFrames=0;renderDirty=true; }
+      else renderDirty=false;
+      lastRender=now;
+    }
   }
   frame = requestAnimationFrame(tick);
   return {

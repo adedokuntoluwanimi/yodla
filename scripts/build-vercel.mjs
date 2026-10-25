@@ -30,11 +30,13 @@ cpSync(join(site, "experience.js"), join(output, "js", "experience.js"));
 // The boutique is isolated to this branch's customer preview build.
 mkdirSync(join(output, "js", "vendor", "three"), { recursive: true });
 for (const file of ["three.module.js", "three.core.js"]) {
-  cpSync(join(root, "node_modules", "three", "build", file), join(output, "js", "vendor", "three", file));
+  cpSync(join(root, "node_modules", "three", "build", file.replace(".js", ".min.js")), join(output, "js", "vendor", "three", file));
 }
+cpSync(join(root, "node_modules", "three", "build", "three.core.min.js"), join(output, "js", "vendor", "three", "three.core.min.js"));
 cpSync(join(root, "node_modules", "three", "examples", "jsm", "environments", "RoomEnvironment.js"), join(output, "js", "vendor", "three", "RoomEnvironment.js"));
+cpSync(join(root, "node_modules", "three", "examples", "jsm", "utils", "BufferGeometryUtils.js"), join(output, "js", "vendor", "three", "BufferGeometryUtils.js"));
 cpSync(join(root, "node_modules", "three", "LICENSE"), join(output, "js", "vendor", "three", "LICENSE.txt"));
-for (const file of ["boutique.js", "boutique-scene.js", "boutique-icons.js", "boutique-music.js", "boutique-checkout.js", "boutique-order.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
+for (const file of ["boutique.js", "boutique-scene.js", "boutique-performance.js", "boutique-icons.js", "boutique-music.js", "boutique-checkout.js", "boutique-order.js", "preview-only.js"]) cpSync(join(site, "boutique", file), join(output, "js", file));
 cpSync(join(site, "boutique", "boutique.css"), join(output, "css", "boutique.css"));
 cpSync(join(site, "boutique", "boutique-counter.css"), join(output, "css", "boutique-counter.css"));
 
