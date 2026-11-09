@@ -1,5 +1,24 @@
 # CONTEXT
 
+## Live workbook storefront (2026-11-09)
+
+- `https://yodla.ng` serves `yodla-workbook-live` on Cloud Run in `project-9afac`, `us-central1`. The durable shelf is `gs://project-9afac-yodla-content/content/yodla-shelf-workbook-v1.json`, selected by `YODLA_GCS_SHELF_OBJECT` with `YODLA_REQUIRE_WORKBOOK=true`. The previous `content/yodla-shelf.json` and revision `yodla-00023-h47` remain available for rollback.
+- Production payments require a live Paystack secret. `api/runtime-config.js` exposes the availability flag. The payment API rejects attempts while unavailable and the checkout page links to Contact Yodla. Production admin uses Firebase authentication.
+- Cloud Run static pages and product and Journal detail routes use the built CSS and module fingerprint. The deployed fingerprint is `cc799772a3db4d5a`.
+
+## Local workbook-managed storefront (2026-11-09)
+
+- Run `npm run dev:catalogue` to start the isolated loopback preview. It stores its shelf, orders, carts, and admin state under `tmp/yodla-catalogue-local/` and uses mock payments and local admin access. Publishing a workbook there does not use Cloud Storage or send email.
+- Admin at `/admin/#import` accepts the three original workbook tabs. Preview the add/update/unpublish diff and explicitly confirm publication. Use SKU or the matching ID column for renames. The catalogue exposes only the published workbook set and keeps recipe costing and batch counts private.
+- The shop accepts published, priced products and uses the workbook amount per listed selling unit. When the selling unit is blank, display it as a listed unit. Orders start at six units per item, honor any higher workbook minimum, and save the 70% deposit and 30% balance. Hampers use the approved 7/9/10 item tiers, priced add-ons, separate 10-word fields, 30% service fee, 7.5% VAT on that fee, and 24–48 hour delivery.
+- Online reference photos are stored in `assets/products/catalogue/` with provenance in `lib/catalog-photos.js`. `cataloguePhotoStyle` in `js/catalog.js` classifies the bundled drink photos for the CSS display treatment. Generated illustrations under `assets/gifting/hampers/` attach only when the fixed item list matches the illustration.
+- The main gifting page lists the collections at `/gifting.html`. `?package=<tier-id>` opens package details, and `&mode=inquiry` opens a quote even for a priced package. `js/hamper-ui.js` renders both views. The homepage carousel uses its original editorial images separately from inventory product thumbnails.
+- Package quotes use the existing contact store and include structured package, quantity, destination, selected extras, and personalization. `extraDrinks` carries drink IDs and quantities from the searchable inventory picker. Hamper checkout requires a confirmed single-unit price and calculates totals from current prices. The isolated preview saves submissions locally with email disabled.
+
+## Note (2026-11-08)
+
+- A local wholesale/hamper/admin-inventory implementation was started from the Nov 7 meeting notes and inventory spreadsheet, then **fully reverted** before any Cloud Run deploy. Main-site contracts below are the restored pre-wholesale state.
+
 ## Separate Gift Club preview (current)
 
 - Vercel project `tolu6/yodla-gift-club`; latest preview: https://yodla-gift-club-f0z8lz1cc-tolu6.vercel.app . Separate from the existing root `yodla` Vercel link and live Cloud Run service.
@@ -32,15 +51,14 @@
 - No raw stack traces or provider strings in UI.
 - No fake controls; working or clearly disabled.
 - Brand: oxblood / ember / cream / ink; Bricolage + Manrope + DM Mono.
-- Homepage hero pattern: full-bleed night stage, left copy, right orbit+bottle, `01 / 04` controls, ember marquee — gifting should match this transitional feel.
+- Homepage hero pattern: full-bleed night stage, left copy, right orbit and bottle, `01 / 04` controls, and ember marquee.
 
-## Gifting (current contract)
+## Legacy bottle gifting contract
 
-- Page: `pages/gifting.html` — homepage-style **hero** (intro only + autoplaying cutout imagery) and a separate **`#gift-builder`** flow below for people → bottles → review.
+- The unmanaged catalogue uses the `#gift-builder` flow in `pages/gifting.html` for people, bottles, and review.
 - Draft: `localStorage` key `yodla-gift-draft` — version 2 `{ recipients[], items[], message, wrap, notify, activeRecipientId, step }`.
 - Steps `1–3` in the builder (people / bottles / review). Cap **5** recipients. Distinct emails required.
 - Buyer pays once at `checkout.html?gift=1`; personal bag checkout stays separate.
-- Hero carousel is independent of form step (autoplay + arrows/swipe).
 - Deep link: `/gifting.html?step=1..3` or `/gifting.html#gift-builder`.
 
 ## Contact
@@ -51,8 +69,8 @@
 
 | Path | Role |
 | --- | --- |
-| `pages/gifting.html` | Hero gift deck markup |
-| `js/gifting.js` | Draft CRUD, `GIFT_SLIDES`, step helpers |
+| `pages/gifting.html` | Gift builder markup |
+| `js/gifting.js` | Legacy gift draft and step helpers |
 | `js/main.js` | `renderGiftDeck` / visual / events |
 | `lib/gift.js` | Server normalize gift payload |
 | `lib/mail.js` | Branded gift emails |

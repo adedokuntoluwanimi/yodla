@@ -12,77 +12,38 @@
 </head>
 <body data-page="contact">
   <header class="site-header" data-site-header></header>
-  <main>
-    <section class="contact-hero">
-      <div class="contact-hero__grain" aria-hidden="true"></div>
-      <div class="shell contact-hero__copy">
-        <span class="eyebrow eyebrow--light">Contact</span>
-        <h1>Tell us what you<br><em>need next.</em></h1>
-        <p>Orders, gifts, delivery questions, or a note for the team — pick a path and we’ll take it from there.</p>
-      </div>
-    </section>
-
-    <section class="shell section contact-body">
-      <div class="contact-grid">
-        <form class="contact-wizard" data-contact-form data-contact-wizard novalidate>
-          <div class="contact-progress" aria-hidden="true">
-            <span data-contact-step-label>Step 1 of 3</span>
-            <ol>
-              <li class="on" data-contact-dot="1"></li>
-              <li data-contact-dot="2"></li>
-              <li data-contact-dot="3"></li>
-            </ol>
+  <main class="shell contact-desk">
+    <header class="contact-desk__intro">
+      <span class="eyebrow">Yodla support</span>
+      <h1>Contact Yodla</h1>
+      <p>Get help with an order, delivery, or a general question.</p>
+    </header>
+    <div class="contact-desk__layout">
+      <section class="contact-desk__message" aria-labelledby="contact-message-heading">
+        <h2 id="contact-message-heading">Send us a message</h2>
+        <form class="yodla-form" data-contact-form>
+          <div class="field-pair">
+            <label>Topic<select name="intent" required><option value="">Choose a topic</option><option>Orders</option><option>Gifts</option><option>Delivery</option><option>Press</option><option>Other</option></select></label>
+            <label>Subject<input name="subject" maxlength="160" required></label>
           </div>
-
-          <fieldset class="contact-stage on" data-contact-stage="1" aria-labelledby="contact-step-1">
-            <legend id="contact-step-1">What is this about?</legend>
-            <div class="contact-intents" role="radiogroup" aria-label="Inquiry type">
-              <label class="contact-intent"><input type="radio" name="intent" value="Orders" required><span>Orders</span></label>
-              <label class="contact-intent"><input type="radio" name="intent" value="Gifts"><span>Gifts</span></label>
-              <label class="contact-intent"><input type="radio" name="intent" value="Delivery"><span>Delivery</span></label>
-              <label class="contact-intent"><input type="radio" name="intent" value="Press"><span>Press</span></label>
-              <label class="contact-intent"><input type="radio" name="intent" value="Other"><span>Other</span></label>
-            </div>
-            <button type="button" class="button button--ember" data-contact-next>Continue</button>
-          </fieldset>
-
-          <fieldset class="contact-stage" data-contact-stage="2" hidden aria-labelledby="contact-step-2">
-            <legend id="contact-step-2">Your details</legend>
-            <div class="field-pair">
-              <label>Name<input name="name" required autocomplete="name" placeholder="Your name"></label>
-              <label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@email.com"></label>
-            </div>
-            <label>Phone<input type="tel" name="phone" autocomplete="tel" placeholder="Optional"></label>
-            <div class="contact-stage__nav">
-              <button type="button" class="text-button" data-contact-back>Back</button>
-              <button type="button" class="button button--ember" data-contact-next>Continue</button>
-            </div>
-          </fieldset>
-
-          <fieldset class="contact-stage" data-contact-stage="3" hidden aria-labelledby="contact-step-3">
-            <legend id="contact-step-3">Message &amp; review</legend>
-            <label>Subject<input name="subject" required placeholder="Short subject"></label>
-            <label>Message<textarea name="message" required rows="5" placeholder="Tell us what’s on your mind"></textarea></label>
-            <label class="check-row"><input type="checkbox" name="subscribe"> Add me to the journal list</label>
-            <dl class="contact-review" data-contact-review></dl>
-            <div data-contact-status aria-live="polite"></div>
-            <div class="contact-stage__nav">
-              <button type="button" class="text-button" data-contact-back>Back</button>
-              <button class="button button--ember" type="submit">Send message</button>
-            </div>
-          </fieldset>
+          <label>Message<textarea name="message" required rows="5" maxlength="2000"></textarea></label>
+          <fieldset><legend>Where should we reply?</legend><div class="field-pair">
+            <label>Name<input name="name" required autocomplete="name" maxlength="100"></label>
+            <label>Email<input name="email" type="email" required autocomplete="email" maxlength="160"></label>
+          </div></fieldset>
+          <label class="hamper-option"><input type="checkbox" name="subscribe"><span>Send me new stories from the Journal</span></label>
+          <button class="button button--dark" type="submit">Send message <svg class="ui-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up-right"></use></svg></button>
+          <div data-contact-status role="status"></div>
         </form>
-
-        <aside class="contact-rail reveal">
-          <span class="eyebrow">Direct</span>
-          <h2>hello@yodla.ng</h2>
-          <p>We read every note. Expect a reply within one business day.</p>
-          <p><a href="mailto:hello@yodla.ng">Email the team</a></p>
-          <p><a href="https://www.instagram.com/yodla.ng/" target="_blank" rel="noopener noreferrer">Instagram</a></p>
-          <p><a href="gifting.html">Building a gift?</a></p>
-        </aside>
-      </div>
-    </section>
+      </section>
+      <aside class="contact-desk__aside" aria-labelledby="contact-direct-heading">
+        <span class="eyebrow">Direct line</span>
+        <h2 id="contact-direct-heading"><a href="mailto:hello@yodla.ng">hello@yodla.ng</a></h2>
+        <a class="contact-desk__link" href="help.html#delivery">Delivery help <span aria-hidden="true">+</span></a>
+        <a class="contact-desk__link" href="gifting.html">Explore gift hampers <span aria-hidden="true">+</span></a>
+        <a class="contact-desk__link" href="https://www.instagram.com/yodla.ng/" target="_blank" rel="noopener noreferrer">Instagram <span aria-hidden="true">+</span></a>
+      </aside>
+    </div>
   </main>
   <footer data-site-footer></footer>
   <script src="js/vendor/gsap.min.js"></script>

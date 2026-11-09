@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { PRODUCTS, formatMoney } from "./catalog.js";
 import { catalogueReply } from "./concierge.js";
+import { purchaseReady } from "./catalog-order.js";
+import { paymentsAvailable, paymentsUnavailable } from "../lib/payment-config.js";
 import {
   addToCart,
   calculateTotals,
@@ -618,6 +620,7 @@ async function runTool(name, args, products, session) {
     return { gift: session.gift };
   }
   if (name === "create_payment") {
+    if (!paymentsAvailable()) return { error: paymentsUnavailable };
     const cart = await getCart(args.cartId || session.cartId);
     const lines = (cart?.items || []).map((item) => {
       const product = map.get(item.productId);
@@ -654,6 +657,7 @@ async function runTool(name, args, products, session) {
     };
   }
   if (name === "create_order") {
+    if (!paymentsAvailable()) return { error: paymentsUnavailable };
     const order = await getOrder(args.reference || session.lastOrderId);
     if (!order) return { error: "Order not found" };
     order.status = "paid";
@@ -878,6 +882,10 @@ export async function getConciergeResponse(messageValue, options = {}) {
   if (rawMessage.length > MAX_MESSAGE_LENGTH) return { status: 400, payload: { error: "Keep your question under 500 characters." } };
 
   const products = options.products || PRODUCTS;
+  if (options.catalogueManaged) {
+    const result = cleanFallback(rawMessage, products.filter(purchaseReady));
+    return { status: 200, payload: result.productIds.length ? result : { reply: "Browse the wholesale catalogue for confirmed offers, or contact Yodla to ask about drinks and hampers.", productIds: [], actions: [] } };
+  }
   if (IDENTITY.test(rawMessage)) {
     return { status: 200, payload: { reply: IDENTITY_REPLY, productIds: [], actions: [] } };
   }

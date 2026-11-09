@@ -17,6 +17,7 @@ import adminContent from "../admin/api/content.js";
 import adminDocument from "../admin/api/document.js";
 import adminPreview from "../admin/api/preview.js";
 import adminUpload from "../admin/api/upload.js";
+import catalogImport from "../admin/api/catalog-import.js";
 import adminOrders from "../admin/api/orders.js";
 import adminSubscribers from "../admin/api/subscribers.js";
 import { getPublishedBlog, getPublishedProduct } from "../lib/content-service.js";
@@ -24,6 +25,8 @@ import { publicSiteUrl, renderContentPage, renderNotFound } from "../lib/seo-ren
 import { logError } from "../lib/log.js";
 
 const root = resolve("public");
+const versionFile = resolve(root, "asset-version.txt");
+const assetVersion = existsSync(versionFile) ? readFileSync(versionFile, "utf8").trim() : "";
 const port = Number(process.env.PORT || 8080);
 const types = {
   ".avif": "image/avif", ".css": "text/css; charset=utf-8", ".gif": "image/gif",
@@ -59,6 +62,7 @@ const apiHandlers = new Map([
   ["/sitemap.xml", sitemap], ["/rss.xml", rss], ["/llms.txt", llms],
   ["/admin/api/content", adminContent], ["/admin/api/document", adminDocument],
   ["/admin/api/preview", adminPreview], ["/admin/api/upload", adminUpload],
+  ["/admin/api/catalog-import", catalogImport],
   ["/admin/api/admins", admins], ["/admin/api/orders", adminOrders], ["/admin/api/subscribers", adminSubscribers],
   ["/api/admin/content", adminContent], ["/api/admin/document", adminDocument],
   ["/api/admin/preview", adminPreview], ["/api/admin/upload", adminUpload],
@@ -116,7 +120,9 @@ createServer(async (request, response) => {
     if ((request.method === "GET" || request.method === "HEAD") && contentMatch) {
       const type = contentMatch[1] === "journal" ? "blog" : "product";
       const result = type === "blog" ? await getPublishedBlog(contentMatch[2]) : await getPublishedProduct(contentMatch[2]);
-      return send(response, result.document ? 200 : 404, result.document ? renderContentPage(result.document, type) : renderNotFound(type), "text/html; charset=utf-8");
+      const html = result.document ? renderContentPage(result.document, type) : renderNotFound(type);
+      const rendered = assetVersion ? html.replaceAll("css/styles.css", `css/styles.css?v=${assetVersion}`).replaceAll("js/main.js", `js/${assetVersion}/main.js`) : html;
+      return send(response, result.document ? 200 : 404, rendered, "text/html; charset=utf-8");
     }
 
     if (request.method !== "GET" && request.method !== "HEAD") return send(response, 405, "Method not allowed", "text/plain; charset=utf-8", { Allow: "GET, HEAD" });

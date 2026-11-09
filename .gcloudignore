@@ -2,6 +2,9 @@
 .github
 .agents
 .codex
+.playwright-mcp/
+.vercel/
+vercel-site/
 data
 node_modules
 public

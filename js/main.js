@@ -2,6 +2,7 @@ import {
   CATEGORIES,
   LOCATIONS,
   PRODUCTS,
+  cataloguePhotoStyle,
   filterProducts,
   formatMoney,
   getAvailability,
@@ -20,8 +21,10 @@ import {
 } from "./cart-store.js";
 import { BLOG_POSTS, getBlogPost } from "./blogs.js";
 import { createAccount, getCurrentAccount, signIn, signOut } from "./account-store.js";
-import { accountFromUser, authorizedFetch, signOutUser, waitForAuth } from "./firebase-auth.js";
-import { content, loadPublishedContent } from "./content-store.js";
+import { accountFromUser, authorizedFetch, runtimeConfig, signOutUser, waitForAuth } from "./firebase-auth.js";
+import { content, loadPublishedContent, STOREFRONT_NAV } from "./content-store.js";
+import { deliveryFeeForState, hamperTotals, orderMinimum, paymentSplit, purchaseReady, toKobo } from "./catalog-order.js";
+import { clearHamperDraft, getHamperSelection, hamperUrl, orderTotalsMarkup, renderHamperBuilder } from "./hamper-ui.js";
 import { heroPositionLabel, nextHeroIndex, normalizeHeroSlides } from "./hero-carousel.js";
 import { enhanceCustomSelects } from "./custom-select.js";
 import { NIGERIAN_STATES } from "./states.js";
@@ -30,7 +33,6 @@ import {
   writeGiftDraft,
   clearGiftDraft,
   giftDraftError,
-  GIFT_SLIDES,
 } from "./gifting.js";
 import { initGifting, giftReviewHtml, renderGift as renderGiftUi } from "./gifting-ui.js";
 
@@ -64,6 +66,11 @@ const productUrl = (id) => {
 const blogUrl = (post) => post?.slug ? `journal/${encodeURIComponent(post.slug)}` : `blog.html?id=${encodeURIComponent(post?.id || "")}`;
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
 const icon = (name, className = "") => `<svg class="ui-icon ${className}" aria-hidden="true" focusable="false"><use href="assets/icons.svg#${name}"></use></svg>`;
+const categoryHref = (category) => `/shop.html?category=${encodeURIComponent(category)}`;
+const inquiryHref = (product) => `/contact.html?subject=${encodeURIComponent(product.name)}`;
+const priceLabel = (product) => product.price > 0 ? formatMoney(product.price) : "Price on request";
+const unitLabel = (product) => !product.unit || product.unit === "each" ? "listed unit" : product.unit;
+const minimumLabel = (product) => `Per ${unitLabel(product)} · minimum ${orderMinimum(product)}`;
 const availabilityCopy = {
   "in-stock": "Ready for delivery",
   "low-stock": "Only a few left",
@@ -76,7 +83,8 @@ function productPicture(product, options = {}) {
   const loading = options.eager ? "eager" : "lazy";
   const fetchPriority = options.eager ? "high" : "auto";
   const alt = options.decorative ? "" : (product.imageAlt || product.name);
-  if (/^https?:\/\//i.test(product.image || "")) return `<img class="${options.className || "product-picture"}" src="${escapeHtml(product.image)}" alt="${escapeHtml(alt)}" loading="${loading}" fetchpriority="${fetchPriority}" width="900" height="1100">`;
+  if (!product.image) return `<span class="${options.className || "product-picture"} product-picture--empty" aria-hidden="true">YODLA</span>`;
+  if (product.catalogKind || /^(?:https?:\/\/|\/api\/)/i.test(product.image)) return `<img class="${options.className || "product-picture"}" src="${escapeHtml(product.image)}" alt="${escapeHtml(alt)}" loading="${loading}" fetchpriority="${fetchPriority}" width="900" height="1100">`;
   return `<picture class="${options.className || "product-picture"}">
     <source type="image/webp" srcset="assets/products/responsive/${product.id}-480.webp 480w, assets/products/responsive/${product.id}-900.webp 900w" sizes="${sizes}">
     <img src="${product.image}" alt="${alt}" loading="${loading}" fetchpriority="${fetchPriority}" width="900" height="1100">
@@ -88,13 +96,14 @@ function heroSlideMedia(slide) {
   return {
     image: slide.image || product?.image || "",
     alt: slide.imageAlt || product?.imageAlt || product?.name || "Yodla drink selection",
-    responsiveBase: slide.responsiveBase || (!/^https?:\/\//i.test(product?.image || "") ? product?.id : ""),
+    responsiveBase: slide.responsiveBase || (!product?.catalogKind && !/^https?:\/\//i.test(product?.image || "") ? product?.id : ""),
   };
 }
 
 function renderHeroSlide(index, { announce = true, animate = true } = {}) {
   const stage = $("[data-hero-carousel]");
   if (!stage || !heroSlides.length) return;
+  stage.hidden = false;
   state.heroSlide = nextHeroIndex(index, 0, heroSlides.length);
   const slide = heroSlides[state.heroSlide];
   const media = heroSlideMedia(slide);
@@ -218,13 +227,9 @@ function applyManagedContent() {
     const list = $(".faq-list");
     if (nav) nav.innerHTML = help.sections.map((section) => `<a href="#${escapeHtml(section.key)}">${escapeHtml(section.title)}</a>`).join("");
     if (list) list.innerHTML = help.sections.map((section, index) => `<article id="${escapeHtml(section.key)}"><span>${String(index + 1).padStart(2, "0")}</span><div><h2>${escapeHtml(section.title)}</h2><details ${index === 0 ? "open" : ""}><summary>${escapeHtml(section.question)}<b>+</b></summary><p>${escapeHtml(section.answer)}</p></details></div></article>`).join("");
+    if (content.catalogueManaged) $("#delivery > div", list || document)?.insertAdjacentHTML("beforeend", '<details><summary>When will my hamper arrive?<b>+</b></summary><p>Hamper delivery takes 24–48 hours.</p></details>');
   }
   if (page !== "home") return;
-  content.site.navigation = [
-    { label: "Shop all", href: "shop.html" },
-    { label: "Gifting", href: "gifting.html" },
-    { label: "Journal", href: "journal.html" },
-  ];
   if (Array.isArray(content.home?.occasions)) {
     content.home.occasions = content.home.occasions.map((item) => (
       String(item.key).toLowerCase() === "hosting"
@@ -243,6 +248,9 @@ function applyManagedContent() {
     if (primary) { primary.href = hero.primaryHref || "shop.html"; primary.childNodes[0].textContent = `${hero.primaryLabel || "Browse the shelves"} `; }
   }
   heroSlides = normalizeHeroSlides(content.home);
+  if (content.catalogueManaged && !PRODUCTS.some((item) => item.occasions.includes("Dinner"))) {
+    heroSlides = heroSlides.map((slide) => slide.href === "shop.html?occasion=Dinner" ? { ...slide, href: "shop.html?section=drinks" } : slide);
+  }
   renderHeroSlide(0, { announce: false });
   $$(".occasion-card").forEach((card, index) => {
     const item = occasions?.[index];
@@ -298,7 +306,7 @@ function shell() {
         <button class="icon-button header-search-toggle" data-open="search" aria-label="Search"><span class="search-icon"></span></button>
       </div>
     </div>
-    <nav class="category-rail shell" aria-label="Product categories">${CATEGORIES.filter((item) => item !== "All").map((item) => `<a href="shop.html?category=${encodeURIComponent(item)}">${item}</a>`).join("")}<a href="shop.html?occasion=Weekend">Weekend</a></nav>`;
+    <nav class="category-rail shell" aria-label="Product categories">${CATEGORIES.filter((item) => item !== "All").map((item) => `<a href="shop.html?category=${encodeURIComponent(item)}">${item}</a>`).join("")}</nav>`;
 
   const supportEmail = content.site.supportEmail || "hello@yodla.ng";
   const instagram = (content.site.socialLinks || []).find((link) => /instagram/i.test(link.label || link.url || ""))?.url
@@ -316,7 +324,7 @@ function shell() {
     <aside class="drawer drawer--small" data-drawer="location" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="location-title"><div class="drawer-head"><div><span class="eyebrow">Delivery</span><h2 id="location-title">Where are we pouring?</h2></div><button class="close-button" data-close aria-label="Close location">${icon("close")}</button></div><div class="drawer-body"><p class="drawer-copy">Availability is checked against your delivery city.</p><div class="location-list">${LOCATIONS.map((location) => `<button data-location="${location}" class="location-option ${state.location === location ? "is-active" : ""}"><span>${location}</span><span>${state.location === location ? "Selected" : "Choose"}</span></button>`).join("")}</div></div></aside>
     <aside class="drawer drawer--small" data-drawer="account" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="account-title"><div class="drawer-head"><div><span class="eyebrow">Your Yodla</span><h2 id="account-title">Account</h2></div><button class="close-button" data-close aria-label="Close account">${icon("close")}</button></div><div class="drawer-body" data-account-view></div></aside>
     <aside class="drawer drawer--small drawer--concierge" data-drawer="concierge" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="concierge-title"><div class="drawer-head concierge-head"><img src="assets/logo.png" alt=""><div><span class="eyebrow">Yodla</span><h2 id="concierge-title">Ask Yodla</h2></div><button type="button" class="text-button concierge-clear" data-clear-chat>Clear chat</button><button class="close-button" data-close aria-label="Close Ask Yodla">${icon("close")}</button></div><div class="drawer-body concierge-body"><div class="chat-messages" data-chat-messages aria-live="polite"><div class="chat-message chat-message--host"><p>Tell me the occasion, what you enjoy, or your budget. I’ll suggest bottles from this Yodla shelf.</p></div></div><div class="chat-prompts"><button data-chat-prompt="A gift under ₦50,000">Gift under ₦50k</button><button data-chat-prompt="Drinks for a dinner">Dinner picks</button><button data-chat-prompt="Something alcohol-free">Alcohol-free</button></div><form class="chat-form" data-chat-form><label for="chat-message">Your question</label><div><input id="chat-message" name="message" maxlength="500" autocomplete="off" placeholder="What should I bring?"><button aria-label="Send question">${icon("arrow-up")}</button></div><small>Ask about an occasion, budget, bottle style, or how to serve it.</small></form></div></aside>
-    <aside class="drawer drawer--small drawer--menu" data-drawer="menu" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Menu"><div class="drawer-head"><span class="wordmark">YODLA<span>.</span></span><button class="close-button" data-close aria-label="Close menu">${icon("close")}</button></div><div class="menu-body"><div class="menu-quick-actions">${state.account ? `<button data-signout>${icon("account")}<span>Sign out</span></button>` : `<a data-menu-account href="${loginHref()}">${icon("account")}<span>Account</span></a>`}<button data-open="search">${icon("search")}<span>Search</span></button><button data-open="location">${icon("location")}<span>${state.location || "Delivery"}</span></button></div><nav class="menu-nav" aria-label="Primary navigation"><a href="shop.html"><span>01</span>Shop all</a><a href="gifting.html"><span>02</span>Gifting</a><a href="journal.html"><span>03</span>Journal</a><a href="contact.html"><span>04</span>Contact</a><a href="help.html"><span>05</span>Help</a></nav><section class="menu-categories" aria-labelledby="menu-categories-title"><span class="eyebrow" id="menu-categories-title">Browse by category</span><div>${CATEGORIES.filter((item) => item !== "All").map((item) => `<a href="shop.html?category=${encodeURIComponent(item)}">${item}</a>`).join("")}<a href="shop.html?occasion=Weekend">Weekend</a></div></section></div></aside>
+    <aside class="drawer drawer--small drawer--menu" data-drawer="menu" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Menu"><div class="drawer-head"><span class="wordmark">YODLA<span>.</span></span><button class="close-button" data-close aria-label="Close menu">${icon("close")}</button></div><div class="menu-body"><div class="menu-quick-actions">${state.account ? `<button data-signout>${icon("account")}<span>Sign out</span></button>` : `<a data-menu-account href="${loginHref()}">${icon("account")}<span>Account</span></a>`}<button data-open="search">${icon("search")}<span>Search</span></button><button data-open="location">${icon("location")}<span>${state.location || "Delivery"}</span></button></div><nav class="menu-nav" aria-label="Primary navigation">${STOREFRONT_NAV.map(({label, href}, index) => `<a href="${href}"><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(label)}</a>`).join("")}</nav><section class="menu-categories" aria-labelledby="menu-categories-title"><span class="eyebrow" id="menu-categories-title">Browse by category</span><div>${CATEGORIES.filter((item) => item !== "All").map((item) => `<a href="shop.html?category=${encodeURIComponent(item)}">${item}</a>`).join("")}</div></section></div></aside>
     <button class="floating-concierge" data-open="concierge" aria-label="Ask Yodla for a drink recommendation"><img src="assets/logo.png" alt=""><span>Ask Yodla</span></button>
     <button class="floating-bag" data-open="cart" aria-label="Open bag">
       <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path class="floating-bag__handle" d="M21 25v-5c0-7 4.5-11 11-11s11 4 11 11v5"/><path class="floating-bag__body" d="M13 24h38l-3 31H16z"/><path class="floating-bag__fold" d="M13 24c8 4 30 4 38 0"/></svg>
@@ -336,11 +344,15 @@ function shell() {
 
 function productCard(product, index = 0) {
   const availability = getAvailability(product, state.location);
+  const ready = purchaseReady(product);
+  const buy = ready && availability !== "unavailable"
+    ? `<button class="add-button" data-add="${escapeHtml(product.id)}" aria-label="Add ${escapeHtml(product.name)} to bag"><span>+</span></button>`
+    : (availability === "unavailable" ? '<small>Unavailable</small>' : `<a class="text-link" href="${inquiryHref(product)}">Ask for a price</a>`);
   return `<article class="product-card reveal" style="--index:${index}">
-    <a class="product-card__media media--${product.imageMode}" href="${productUrl(product.id)}">
-      <span class="product-card__tag">${product.tag || product.category || "Yodla"}</span>${productPicture(product)}<span class="product-card__view">View bottle ${icon("arrow-up-right")}</span>
+    <a class="product-card__media media--${product.imageMode}" data-catalogue-photo="${cataloguePhotoStyle(product)}" data-drink-category="${escapeHtml(product.category)}" href="${productUrl(product.id)}">
+      <span class="product-card__tag">${escapeHtml(product.tag || product.category || "Yodla")}</span>${productPicture(product)}<span class="product-card__view">View item ${icon("arrow-up-right")}</span>
     </a>
-    <div class="product-card__meta"><div><p>${product.brand} · ${product.subcategory}</p><h3><a href="${productUrl(product.id)}">${product.name}</a></h3><small class="availability availability--${availability}">${availabilityCopy[availability]}</small></div><div class="product-card__buy"><strong>${formatMoney(product.price)}</strong><button class="add-button" data-add="${product.id}" aria-label="Add ${product.name} to bag"><span>+</span></button></div></div>
+    <div class="product-card__meta"><div><p>${escapeHtml([product.brand, product.subcategory].filter(Boolean).join(" · ") || product.category)}</p><h3><a href="${productUrl(product.id)}">${escapeHtml(product.name)}</a></h3><small>${ready ? (product.catalogKind ? escapeHtml(minimumLabel(product)) : availabilityCopy[availability]) : "Online checkout unavailable"}${product.representativeImage ? " · Representative photo" : ""}</small></div><div class="product-card__buy"><strong>${escapeHtml(priceLabel(product))}</strong>${buy}</div></div>
   </article>`;
 }
 
@@ -721,7 +733,7 @@ function cartMarkup() {
   if (!state.cart.length) return `<div class="cart-empty state-card"><span class="state-icon">${icon("bag")}</span><h3>Your bag has room.</h3><p>Start with a bottle for dinner, a gift, or the weekend.</p><a class="button button--dark" href="shop.html">Explore the shelves</a></div>`;
   return `<div class="cart-lines">${state.cart.map((line) => {
     const product = getProduct(line.id);
-    return `<article class="cart-line" data-cart-line="${line.id}"><a href="${productUrl(line.id)}" class="cart-line__image">${productPicture(product, { decorative: true, sizes: "120px" })}</a><div class="cart-line__copy"><div><p>${product.brand} · ${product.amount || product.volume || ""}</p><h3>${product.name}</h3></div><div class="cart-line__bottom"><div class="quantity"><button data-quantity="${line.id}" data-change="-1" aria-label="Reduce ${product.name}">${icon("minus")}</button><span aria-live="polite">${line.quantity}</span><button data-quantity="${line.id}" data-change="1" aria-label="Increase ${product.name}">+</button></div><strong>${formatMoney(product.price * line.quantity)}</strong></div><button class="remove-link" data-remove="${line.id}">Remove</button></div></article>`;
+    return `<article class="cart-line" data-cart-line="${line.id}"><a href="${productUrl(line.id)}" class="cart-line__image">${productPicture(product, { decorative: true, sizes: "120px" })}</a><div class="cart-line__copy"><div><p>${escapeHtml(product.brand)} · ${escapeHtml(product.amount || product.volume || "")}</p><h3>${escapeHtml(product.name)}</h3></div><div class="cart-line__bottom"><div class="quantity"><button data-quantity="${line.id}" data-change="-1" aria-label="Reduce ${escapeHtml(product.name)}">${icon("minus")}</button><span aria-live="polite">${line.quantity}</span><button data-quantity="${line.id}" data-change="1" aria-label="Increase ${escapeHtml(product.name)}">+</button></div><strong>${formatMoney(product.price * line.quantity)}</strong></div><button class="remove-link" data-remove="${line.id}">Remove</button></div></article>`;
   }).join("")}</div><div class="cart-summary"><div><span>Subtotal</span><strong>${formatMoney(getCartTotal(state.cart))}</strong></div><p>Delivery is calculated after your address.</p><a class="button button--ember button--wide" href="checkout.html">Continue to checkout ${icon("arrow-up-right")}</a></div>`;
 }
 
@@ -868,6 +880,7 @@ function flyToBag(button, product) {
 function addToCart(productId, button) {
   const product = getProduct(productId);
   if (!product) return;
+  if (!purchaseReady(product)) return toast("This item is available by request.", "error");
   if (getAvailability(product, state.location) === "unavailable") return toast(`${product.name} is not available in ${state.location}.`, "error");
   state.cart = addCartItem(state.cart, productId);
   renderCart();
@@ -879,6 +892,8 @@ function addToCart(productId, button) {
 function adjustQuantity(productId, change, button) {
   const current = state.cart.find((line) => line.id === productId);
   if (!current) return;
+  const product = getProduct(productId);
+  if (product?.catalogKind && current.quantity + change < orderMinimum(product)) return toast(`The minimum for this item is ${orderMinimum(product)}. Remove the line if you no longer need it.`, "error");
   state.cart = setCartQuantity(state.cart, productId, current.quantity + change);
   renderCart();
   const line = $(`[data-cart-line="${productId}"]`);
@@ -908,7 +923,7 @@ function renderSearch(query) {
     ? `<div class="state-card state-card--quiet"><p>Search by drink, style or tasting note.</p></div>`
     : !results.length
       ? `<div class="state-card"><span class="state-icon">?</span><h3>No matching bottles.</h3><p>Try a broader word like wine, gin or citrus.</p></div>`
-      : results.map((product) => `<a class="search-result" href="${productUrl(product.id)}">${productPicture(product, { decorative: true, sizes: "70px" })}<span><small>${product.category} · ${product.volume}</small><strong>${product.name}</strong><em>${formatMoney(product.price)}</em></span>${icon("arrow-up-right")}</a>`).join("");
+      : results.map((product) => `<a class="search-result" href="${productUrl(product.id)}">${productPicture(product, { decorative: true, sizes: "70px" })}<span><small>${escapeHtml(product.category)} · ${product.volume}</small><strong>${escapeHtml(product.name)}</strong><em>${escapeHtml(priceLabel(product))}</em></span>${icon("arrow-up-right")}</a>`).join("");
   targets.forEach((target) => { target.innerHTML = markup; });
 }
 
@@ -924,18 +939,34 @@ function renderFeatured() {
   window.setTimeout(() => { grid.innerHTML = (featured.length ? featured : PRODUCTS.slice(0, 4)).map(productCard).join(""); animateReveals(); }, 500);
 }
 
-function blogCard(post, featured = false) {
-  const imageProduct = { id: post.imageId, name: post.title, image: post.image, imageAlt: post.imageAlt };
-  return `<article class="editorial-card ${featured ? "editorial-card--lead" : ""} reveal">
-    <a class="editorial-card__image" href="${blogUrl(post)}">${productPicture(imageProduct, { sizes: featured ? "(max-width: 767px) 100vw, 65vw" : "(max-width: 767px) 100vw, 35vw" })}</a>
-    <div><span>${post.category} · ${post.readTime}</span><h2><a href="${blogUrl(post)}">${post.title}</a></h2><p>${post.excerpt}</p><a href="${blogUrl(post)}">Read the story ${icon("arrow-up-right")}</a></div>
+function journalImage(post, eager = false) {
+  return post.image ? `<img src="${escapeHtml(post.image)}" alt="${escapeHtml(post.imageAlt || "")}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'}>` : "";
+}
+
+function blogCard(post, index, heading = "h2") {
+  return `<article class="journal-story">
+    <a href="${blogUrl(post)}">
+      <span class="journal-story__number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
+      <div class="journal-story__copy">
+        <span class="journal-story__meta">${[post.category, post.readTime].filter(Boolean).map(escapeHtml).join(" · ")}</span>
+        <${heading}>${escapeHtml(post.title)}</${heading}><p>${escapeHtml(post.excerpt)}</p>
+        <span class="journal-story__read">Read the story ${icon("arrow-up-right")}</span>
+      </div>
+      ${post.image ? `<div class="journal-story__media">${journalImage(post, index === 0)}</div>` : ""}
+    </a>
   </article>`;
 }
 
 function renderJournal() {
   const target = $("[data-blog-grid]");
   if (!target) return;
-  target.innerHTML = BLOG_POSTS.map((post, index) => blogCard(post, index === 0)).join("");
+  const lead = BLOG_POSTS.find((post) => post.id === content.home.journalPromotionId) || BLOG_POSTS[0];
+  if (!lead) {
+    target.innerHTML = '<p class="state-card">There are no stories in the Journal yet.</p>';
+    return;
+  }
+  const stories = [lead, ...BLOG_POSTS.filter((post) => post.id !== lead.id)];
+  target.innerHTML = `<p class="journal-list__label">${stories.length} ${stories.length === 1 ? "story" : "stories"}</p>${stories.map((post, index) => blogCard(post, index)).join("")}`;
 }
 
 function renderBlogPage() {
@@ -943,11 +974,33 @@ function renderBlogPage() {
   if (!target) return;
   const requestedSlug = document.body.dataset.contentSlug || decodeURIComponent(location.pathname.split("/").filter(Boolean).at(-1) || "");
   const post = BLOG_POSTS.find((item) => item.slug === requestedSlug) || getBlogPost(new URLSearchParams(location.search).get("id")) || BLOG_POSTS[0];
-  const imageProduct = { id: post.imageId, name: post.title, image: post.image };
+  if (!post) {
+    target.innerHTML = '<h1>Story unavailable</h1><a class="text-link" href="journal.html">Back to the Journal</a>';
+    return;
+  }
   document.title = `${post.title} — Yodla Journal`;
-  target.innerHTML = `<header class="blog-hero"><nav class="breadcrumbs"><a href="journal.html">Journal</a><span>/</span><span>${post.category}</span></nav><span class="eyebrow">${post.category} · ${post.readTime}</span><h1>${post.title}</h1><p>${post.excerpt}</p></header><figure class="blog-hero__image">${productPicture(imageProduct, { eager: true, sizes: "100vw" })}</figure><div class="blog-body"><aside><span>Yodla notes</span><p>Useful ideas for better bottles, easier hosting and more generous tables.</p><a href="shop.html">Shop the shelves ${icon("arrow-up-right")}</a></aside><article><p class="blog-intro">${post.introduction}</p>${post.sections.map((section) => `<section><h2>${section.heading}</h2><p>${section.body}</p></section>`).join("")}<blockquote>${post.pullQuote}</blockquote><div class="blog-end"><span>Drink thoughtfully. Host generously.</span><a href="journal.html">Back to the journal</a></div></article></div>`;
+  const storyPath = escapeHtml(location.pathname + location.search);
+  target.classList.add("journal-reader");
+  target.innerHTML = `<nav class="package-back" aria-label="Journal"><a class="text-link" href="journal.html">Back to the Journal</a></nav>
+    <header class="journal-reader__header">
+      <div><span class="journal-story__meta">${[post.category, post.readTime].filter(Boolean).map(escapeHtml).join(" · ")}</span><h1>${escapeHtml(post.title)}</h1><p>${escapeHtml(post.excerpt)}</p></div>
+      ${post.image ? `<figure class="journal-reader__image">${journalImage(post, true)}</figure>` : ""}
+    </header>
+    <div class="journal-reader__body">
+      ${post.sections.length ? `<nav class="journal-reader__contents" aria-label="In this story"><span class="eyebrow">In this story</span>
+        ${post.sections.map((section, index) => `<a href="${storyPath}#story-section-${index + 1}">${escapeHtml(section.heading)}</a>`).join("")}</nav>` : ""}
+      <div class="journal-reader__copy"><p class="journal-reader__lede">${escapeHtml(post.introduction)}</p>
+        ${post.sections.map((section, index) => `<section id="story-section-${index + 1}"><h2>${escapeHtml(section.heading)}</h2><p>${escapeHtml(section.body)}</p></section>`).join("")}
+        ${post.pullQuote ? `<blockquote>${escapeHtml(post.pullQuote)}</blockquote>` : ""}
+      </div>
+    </div>`;
   const related = $("[data-blog-related]");
-  if (related) related.innerHTML = BLOG_POSTS.filter((item) => item.id !== post.id).map(blogCard).join("");
+  if (related) {
+    const stories = BLOG_POSTS.filter((item) => item.id !== post.id);
+    related.classList.add("journal-archive__grid");
+    related.innerHTML = stories.map((story, index) => blogCard(story, index, "h3")).join("");
+    related.closest(".blog-related").hidden = !stories.length;
+  }
 }
 
 function readShopUrl() {
@@ -955,6 +1008,16 @@ function readShopUrl() {
   const category = params.get("category") || "All";
   state.filters.category = CATEGORIES.includes(category) ? category : "All";
   state.filters.occasion = params.get("occasion") || "";
+  const section = params.get("section");
+  state.shopSection = ["drinks", "mixed", "retail"].includes(section) ? section : "wholesale";
+}
+
+function updateShopUrl() {
+  const url = new URL(location.href);
+  if (state.filters.category === "All") url.searchParams.delete("category");
+  else url.searchParams.set("category", state.filters.category);
+  if (!state.filters.occasion) url.searchParams.delete("occasion");
+  history.pushState({}, "", url);
 }
 
 function shopFilters() {
@@ -965,12 +1028,32 @@ function shopFilters() {
 function renderShop() {
   const grid = $("[data-catalogue-grid]");
   if (!grid) return;
+  const section = state.shopSection;
+  const title = $("[data-shop-title]");
+  const navigation = $("[data-shop-sections]");
+  if (title) title.textContent = { drinks: "Drinks", mixed: "Cocktail & Mocktail Experience", retail: "Retail", wholesale: "Shop wholesale" }[section];
+  if (navigation) {
+    const wholesaleHref = section === "mixed" ? "/shop.html?section=mixed" : section === "drinks" ? "/shop.html?section=drinks" : "/shop.html";
+    navigation.innerHTML = `<a class="button button--quiet" href="${wholesaleHref}" ${section !== "retail" ? 'aria-current="page"' : ""}>Wholesale</a><a class="button button--quiet" href="/shop.html?section=retail" ${section === "retail" ? 'aria-current="page"' : ""}>Retail · Coming Soon</a>`;
+  }
+  const retail = section === "retail";
+  $(".filter-panel").hidden = retail;
+  $(".catalogue-toolbar").hidden = retail;
+  if (retail) {
+    grid.innerHTML = '<div class="state-card catalogue-empty"><h3>Retail is coming soon.</h3><p>Explore the wholesale catalogue in the meantime.</p><a class="button button--dark" href="shop.html">Shop wholesale</a></div>';
+    return;
+  }
   const categoryPanel = $(".filter-panel > div:first-child");
-  if (categoryPanel) categoryPanel.innerHTML = `<h2>Drink</h2>${CATEGORIES.map((category) => `<button data-filter-category="${escapeHtml(category)}" class="${state.filters.category === category ? "is-active" : ""}"><span>${escapeHtml(category)}</span></button>`).join("")}`;
-  const products = sortProducts(filterProducts(shopFilters()), state.filters.sort);
+  const categories = section === "mixed" ? ["All", "Cocktails", "Mocktails"] : CATEGORIES;
+  if (categoryPanel) categoryPanel.innerHTML = `<h2>Categories</h2>${categories.map((category) => `<button data-filter-category="${escapeHtml(category)}" aria-pressed="${state.filters.category === category}" class="${state.filters.category === category ? "is-active" : ""}"><span>${escapeHtml(category)}</span></button>`).join("")}`;
+  const products = sortProducts(filterProducts(shopFilters()).filter((product) => {
+    if (section === "mixed") return ["cocktail", "mocktail"].includes(product.catalogKind);
+    if (section === "drinks" && !["Cocktails", "Mocktails", "Ice Packs", "Extras"].includes(state.filters.category)) return !["Ice Packs", "Extras"].includes(product.category) && product.catalogKind !== "cocktail" && product.catalogKind !== "mocktail";
+    return true;
+  }), state.filters.sort);
   $$('[data-filter-category]').forEach((button) => button.classList.toggle("is-active", button.dataset.filterCategory === state.filters.category));
   const count = $("[data-result-count]");
-  if (count) count.textContent = `${products.length} ${products.length === 1 ? "bottle" : "bottles"}`;
+  if (count) count.textContent = `${products.length} ${products.length === 1 ? "item" : "items"}`;
   if (!products.length) grid.innerHTML = `<div class="state-card catalogue-empty"><span class="state-icon">${icon("bag")}</span><h3>Nothing on this shelf yet.</h3><p>Clear a filter or change your delivery city to see more.</p><button class="button button--dark" data-clear-filters>Clear filters</button></div>`;
   else grid.innerHTML = products.map(productCard).join("");
   animateReveals();
@@ -980,7 +1063,21 @@ function renderProductPage() {
   const target = $("[data-product-detail]");
   if (!target) return;
   const requestedSlug = document.body.dataset.contentSlug || decodeURIComponent(location.pathname.split("/").filter(Boolean).at(-1) || "");
-  const product = PRODUCTS.find((item) => item.slug === requestedSlug) || getProduct(new URLSearchParams(location.search).get("id")) || PRODUCTS[0];
+  const product = PRODUCTS.find((item) => item.slug === requestedSlug) || getProduct(new URLSearchParams(location.search).get("id"));
+  if (!product) {
+    target.innerHTML = '<div class="state-card"><h1>This item is unavailable.</h1><a class="text-link" href="shop.html">Browse the current catalogue</a></div>';
+    return;
+  }
+  if (product.catalogKind) {
+    const available = purchaseReady(product) && getAvailability(product, state.location) !== "unavailable";
+    target.innerHTML = `<div class="product-detail__media media--${product.imageMode}" data-catalogue-photo="${cataloguePhotoStyle(product)}" data-drink-category="${escapeHtml(product.category)}">${productPicture(product, { eager: true })}</div>
+      <div class="product-detail__copy"><nav class="breadcrumbs"><a href="/shop.html">Shop</a><span>/</span><a href="${categoryHref(product.category)}">${escapeHtml(product.category)}</a></nav>
+      <span class="eyebrow">Wholesale</span><h1>${escapeHtml(product.name)}</h1><p class="product-lede">${escapeHtml(product.description)}</p>
+      ${product.representativeImage ? "<p>Representative photo</p>" : ""}
+      <div class="product-price"><strong>${escapeHtml(priceLabel(product))}</strong></div>
+      ${available ? `<p>${escapeHtml(minimumLabel(product))}</p><button class="button button--ember button--wide" data-add="${escapeHtml(product.id)}">Add to bag</button>` : `<a class="button button--dark button--wide" href="${inquiryHref(product)}">Ask about this item</a>`}</div>`;
+    return;
+  }
   const availability = getAvailability(product, state.location);
   target.innerHTML = `<div class="product-detail__media media--${product.imageMode}"><span class="floating-note">${product.tag}</span>${productPicture(product, { eager: true, sizes: "(max-width: 1023px) 100vw, 55vw" })}<span class="media-index">Y / ${String(PRODUCTS.indexOf(product) + 1).padStart(2, "0")}</span></div><div class="product-detail__copy"><nav class="breadcrumbs"><a href="shop.html">Shop</a><span>/</span><a href="shop.html?category=${encodeURIComponent(product.category)}">${product.category}</a></nav><span class="eyebrow">${product.brand} · ${product.subcategory}</span><h1>${product.name}</h1><p class="product-lede">${product.description}</p><div class="product-facts"><span>${product.volume}</span><span>${product.abv} ABV</span><span>${product.prototype ? "Yodla concept" : "Original brand"}</span></div><div class="product-price"><strong>${formatMoney(product.price)}</strong>${product.compareAtPrice ? `<del>${formatMoney(product.compareAtPrice)}</del>` : ""}</div><div class="availability-panel availability--${availability}"><i></i><span><strong>${availabilityCopy[availability]}</strong><small>${state.location ? `Availability checked for ${state.location}` : "Set a city for live availability"}</small></span><button data-open="location">${state.location ? "Change" : "Choose"}</button></div><button class="button button--ember button--wide button--large product-primary-action" data-add="${product.id}" ${availability === "unavailable" ? "disabled" : ""}>Add to bag <span>+</span></button><div class="detail-sections"><details open><summary>Tasting notes <span>+</span></summary><p>${product.notes.join(" · ")}</p></details><details><summary>How to serve <span>+</span></summary><p>${product.serve}</p></details><details><summary>Delivery & returns <span>+</span></summary><p>Delivery timing is confirmed at checkout. Unopened products can be returned under our help policy.</p></details></div></div><div class="mobile-purchase-bar"><span><small>${product.name}</small><strong>${formatMoney(product.price)}</strong></span><button class="button button--ember" data-add="${product.id}" ${availability === "unavailable" ? "disabled" : ""}>${availability === "unavailable" ? "Unavailable" : "Add to bag"}<b>+</b></button></div>`;
   const related = $("[data-related-grid]");
@@ -988,13 +1085,18 @@ function renderProductPage() {
 }
 
 function isGiftCheckout() {
-  return page === "checkout" && new URLSearchParams(location.search).get("gift") === "1";
+  return !content.catalogueManaged && page === "checkout" && new URLSearchParams(location.search).get("gift") === "1";
+}
+
+function isHamperCheckout() {
+  return content.catalogueManaged && page === "checkout" && new URLSearchParams(location.search).get("hamper") === "1";
 }
 
 function configureGiftCheckoutUi() {
   if (page !== "checkout") return;
   const giftMode = isGiftCheckout();
-  document.body.dataset.checkoutMode = giftMode ? "gift" : "personal";
+  const hamperMode = isHamperCheckout();
+  document.body.dataset.checkoutMode = hamperMode ? "hamper" : giftMode ? "gift" : "personal";
   const title = $("[data-checkout-title]");
   const lede = $("[data-checkout-lede]");
   const delivery = $("[data-checkout-delivery-fieldset]");
@@ -1003,16 +1105,18 @@ function configureGiftCheckoutUi() {
   const giftSummary = $("[data-gift-checkout-summary]");
   const legal = $("[data-checkout-legal]");
 
-  if (title) title.textContent = giftMode ? "Pay for this gift." : "Delivery details.";
+  if (title) title.textContent = hamperMode ? "Hamper delivery." : giftMode ? "Pay for this gift." : "Delivery details.";
   if (lede) {
     lede.textContent = giftMode
       ? "You’re the buyer. Recipients keep the delivery details you already set — they get the note after payment."
-      : "Checkout as a guest or while signed in. Paystack is used when configured; otherwise mock payment completes the order.";
+      : hamperMode ? "Pay in full today. Hamper delivery takes 24–48 hours."
+        : content.catalogueManaged ? "Pay 70% today. The remaining 30% is due on delivery."
+          : "Checkout as a guest or while signed in.";
   }
   if (delivery) {
     delivery.hidden = giftMode;
     $$("input, select", delivery).forEach((field) => {
-      field.required = !giftMode;
+      field.required = !giftMode && field.name !== "note";
       field.disabled = giftMode;
     });
   }
@@ -1045,37 +1149,47 @@ function renderCheckoutSummary() {
   }
   const target = $("[data-checkout-summary]");
   if (!target) return;
+  const deliveryState = $("[data-checkout-form] [name=city]")?.value;
+  const delivery = deliveryState ? deliveryFeeForState(deliveryState) : null;
+  if (isHamperCheckout()) {
+    const selection = getHamperSelection(content.hampers, PRODUCTS);
+    const button = $("[data-checkout-form] button[type=submit]");
+    if (button) button.disabled = !selection;
+    target.innerHTML = selection
+      ? `<div class="checkout-line"><span><strong>${escapeHtml(selection.tier.name)}</strong><small>Delivery in 24–48 hours</small></span></div>
+        ${selection.addons.map((item) => `<div class="checkout-total"><span>${escapeHtml(item.name)}${item.quantity > 1 ? ` · Qty ${item.quantity}` : ""}</span><strong>${formatMoney(toKobo(item.price) * (item.quantity ?? 1) / 100)}</strong></div>`).join("")}
+        ${orderTotalsMarkup({ ...hamperTotals(selection.tier, selection.addons, delivery), deliveryFee: delivery })}
+        <a class="text-link" href="${hamperUrl(selection.tier.id)}">Edit hamper</a>`
+      : '<div class="state-card"><h3>Choose an available hamper.</h3><a class="text-link" href="gifting.html#gift-builder">Back to gifting</a></div>';
+    return;
+  }
   if (!state.cart.length) {
     target.innerHTML = `<div class="state-card"><h3>Your bag is empty.</h3><p>Add a bottle before checking out.</p><a class="button button--dark" href="shop.html">Shop drinks</a></div>`;
     return;
   }
+  const subtotal = state.cart.reduce((sum, item) => sum + toKobo(getProduct(item.id).price) * item.quantity, 0) / 100;
+  const total = (toKobo(subtotal) + toKobo(delivery)) / 100;
+  const summary = content.catalogueManaged
+    ? orderTotalsMarkup({ subtotal, total, deliveryFee: delivery, ...(delivery === null ? {} : paymentSplit(total)) })
+    : `<div class="checkout-total"><span>Total (excl. delivery)</span><strong>${formatMoney(subtotal)}</strong></div>`;
   target.innerHTML = `${state.cart.map((line) => {
     const product = getProduct(line.id);
-    return `<div class="checkout-line">${productPicture(product, { decorative: true, sizes: "58px" })}<span><strong>${product.name}</strong><small>Qty ${line.quantity}</small></span><b>${formatMoney(product.price * line.quantity)}</b></div>`;
-  }).join("")}<div class="checkout-total"><span>Total (excl. delivery)</span><strong>${formatMoney(getCartTotal(state.cart))}</strong></div>`;
+    return `<div class="checkout-line">${productPicture(product, { decorative: true, sizes: "58px" })}<span><strong>${escapeHtml(product.name)}</strong><small>Qty ${line.quantity}</small></span><b>${formatMoney(product.price * line.quantity)}</b></div>`;
+  }).join("")}${summary}`;
 }
 
 function renderGiftingPage() {
+  if (page !== "gifting") return;
+  if (content.catalogueManaged) {
+    const target = $("#gift-builder");
+    if (target) renderHamperBuilder(target, content.hampers, PRODUCTS, toast);
+    return;
+  }
   initGifting({
     toast,
     productPicture,
     floatBottle: floatHeroBottle,
   });
-  if (page !== "gifting") return;
-  heroSlides = GIFT_SLIDES.map((slide, index) => ({
-    id: `gift-hero-${index + 1}`,
-    image: `${slide.image}?v=cutout4`,
-    imageAlt: slide.imageAlt,
-    caption: slide.caption,
-    captionStrong: slide.captionStrong,
-    stamp: slide.stamp,
-    occasion: slide.label,
-    href: "#gift-builder",
-    responsiveBase: "",
-  }));
-  if ($("[data-hero-carousel]") && heroSlides.length) {
-    renderHeroSlide(0, { announce: false, animate: false });
-  }
   const prompts = $(".chat-prompts");
   if (prompts) {
     prompts.innerHTML = `<button data-chat-prompt="I'm on gifting — what's next?">What's next?</button><button data-chat-prompt="I want to send a gift to a few people">Gift to a few people</button><button data-chat-prompt="A gift under ₦50,000">Gift under ₦50k</button>`;
@@ -1083,77 +1197,26 @@ function renderGiftingPage() {
 }
 
 function renderGiftFlow() {
-  if (page === "gifting") renderGiftUi();
+  if (page === "gifting" && !content.catalogueManaged) renderGiftUi();
 }
 
-function initContactWizard() {
-  const form = $("[data-contact-wizard]");
+function initContactForm() {
+  const form = $("[data-contact-form]");
   if (!form) return;
-  let step = 1;
   const params = new URLSearchParams(location.search);
-  const intentParam = params.get("intent") || "";
-  const intentMap = { gifts: "Gifts", gift: "Gifts", orders: "Orders", delivery: "Delivery", press: "Press", other: "Other" };
-  const prefill = intentMap[String(intentParam).toLowerCase()];
-  if (prefill) {
-    const radio = form.querySelector(`input[name="intent"][value="${prefill}"]`);
-    if (radio) radio.checked = true;
+  const intent = (params.get("intent") || "").toLowerCase();
+  const intents = { gifts: "Gifts", gift: "Gifts", gifting: "Gifts", orders: "Orders", delivery: "Delivery", press: "Press", other: "Other" };
+  const subject = params.get("subject")?.trim().slice(0, 160);
+  if (Object.hasOwn(intents, intent)) form.elements.intent.value = intents[intent];
+  if (subject) {
+    const tier = form.elements.intent.value === "Gifts" && content.hampers.find((item) => item.name.toLowerCase() === subject.toLowerCase());
+    if (tier) {
+      location.replace(hamperUrl(tier.id) + "&mode=inquiry");
+      return;
+    }
+    if (!form.elements.intent.value) form.elements.intent.value = "Orders";
+    form.elements.subject.value = subject;
   }
-
-  const showStep = (next) => {
-    step = next;
-    $$("[data-contact-stage]", form).forEach((stage) => {
-      const active = Number(stage.dataset.contactStage) === step;
-      stage.hidden = !active;
-      stage.classList.toggle("on", active);
-      if (active && gsap && !reduceMotion) {
-        gsap.fromTo(stage, { opacity: 0, x: 22 }, { opacity: 1, x: 0, duration: 0.32, ease: "power2.out" });
-      }
-      if (active) {
-        const legend = $("legend", stage);
-        legend?.focus?.();
-      }
-    });
-    $$("[data-contact-dot]", form).forEach((dot) => {
-      dot.classList.toggle("on", Number(dot.dataset.contactDot) <= step);
-    });
-    const label = $("[data-contact-step-label]", form);
-    if (label) label.textContent = `Step ${step} of 3`;
-    if (step === 3) renderContactReview(form);
-  };
-
-  form.addEventListener("click", (event) => {
-    if (event.target.closest("[data-contact-next]")) {
-      event.preventDefault();
-      if (step === 1) {
-        const intent = form.querySelector("input[name='intent']:checked");
-        if (!intent) return toast("Choose what this is about.", "error");
-        const subject = form.elements.subject;
-        if (subject && !subject.value) subject.value = intent.value;
-        showStep(2);
-        return;
-      }
-      if (step === 2) {
-        if (!form.elements.name.value.trim() || !form.elements.email.checkValidity()) {
-          form.elements.name.reportValidity();
-          form.elements.email.reportValidity();
-          return;
-        }
-        showStep(3);
-      }
-    }
-    if (event.target.closest("[data-contact-back]")) {
-      event.preventDefault();
-      showStep(Math.max(1, step - 1));
-    }
-  });
-  showStep(prefill ? 2 : 1);
-}
-
-function renderContactReview(form) {
-  const review = $("[data-contact-review]", form);
-  if (!review) return;
-  const intent = form.querySelector("input[name='intent']:checked")?.value || "Other";
-  review.innerHTML = `<div><dt>About</dt><dd>${escapeHtml(intent)}</dd></div><div><dt>From</dt><dd>${escapeHtml(form.elements.name.value)} · ${escapeHtml(form.elements.email.value)}</dd></div>`;
 }
 
 function syncBagFromConcierge(payload) {
@@ -1194,8 +1257,10 @@ function showCheckoutSuccess(order, reference, { clearGift = false } = {}) {
   const giftLine = recipients.length
     ? `<p>Gift note sent to ${recipients.map((person) => escapeHtml(person.name || person.email)).join(", ")}.</p>`
     : "";
+  const wholesale = order?.source === "wholesale";
+  const balance = wholesale ? `<p>Deposit ${formatMoney(order.totals.dueNow)} confirmed. ${order.balanceCollectedAt ? "The delivery balance has been collected." : `${formatMoney(order.totals.balanceDue)} is due on delivery.`}</p>` : "";
   checkoutView.classList.add("checkout-page--success");
-  checkoutView.innerHTML = `<div class="success-state"><div class="success-mark">${icon("check")}</div><span class="eyebrow">Order ${escapeHtml(code)}</span><h1>The good part is on its way.</h1><p>Payment confirmed. Keep your tracking code <strong>${escapeHtml(code)}</strong> for delivery updates.</p>${giftLine}<a class="button button--dark" href="shop.html">Keep browsing</a>${recipients.length ? `<a class="text-link" href="gifting.html">Send another gift</a>` : ""}</div>`;
+  checkoutView.innerHTML = `<div class="success-state"><div class="success-mark">${icon("check")}</div><span class="eyebrow">Order ${escapeHtml(code)}</span><h1>The good part is on its way.</h1><p>${wholesale ? "Order confirmed." : "Payment confirmed."} Keep your tracking code <strong>${escapeHtml(code)}</strong> for delivery updates.</p>${balance}${giftLine}<a class="button button--dark" href="shop.html">Keep browsing</a>${recipients.length || order?.hamper ? `<a class="text-link" href="gifting.html">Send another gift</a>` : ""}</div>`;
   if (clearGift) clearGiftDraft();
   try {
     const paidUrl = clearGift
@@ -1228,7 +1293,8 @@ async function confirmPaidOrder(reference, { clearGift = isGiftCheckout() } = {}
   });
   const orderPayload = await confirm.json().catch(() => ({}));
   if (!confirm.ok) throw new Error(friendlyMessage(orderPayload.error, "Order could not be confirmed."));
-  if (!clearGift) {
+  if (orderPayload.order?.source === "hamper") clearHamperDraft();
+  else if (!clearGift) {
     state.cart = [];
     writeCart(state.cart);
     renderCart();
@@ -1253,12 +1319,16 @@ async function submitCheckout(form) {
   const button = $("button[type=submit]", form);
   const status = $("[data-checkout-status]");
   const giftMode = isGiftCheckout();
+  const hamperMode = isHamperCheckout();
+  const hamper = hamperMode ? getHamperSelection(content.hampers, PRODUCTS) : null;
   const gift = readGiftDraft();
 
   if (giftMode) {
     const error = giftDraftError(gift);
     if (error) return toast(error, "error");
-  } else if (!state.cart.length) {
+  } else if (hamperMode && !hamper) {
+    return toast("Choose an available hamper first.", "error");
+  } else if (!hamperMode && !state.cart.length) {
     return toast("Your bag is empty.", "error");
   }
   if (!form.reportValidity()) return;
@@ -1271,7 +1341,12 @@ async function submitCheckout(form) {
     if (new URLSearchParams(location.search).get("state") === "failure") throw new Error("We could not confirm that order.");
 
     let paymentBody;
-    if (giftMode) {
+    if (hamperMode) {
+      paymentBody = {
+        hamper: hamper.draft, email: data.email, phone: data.phone, name: `${data.firstName} ${data.lastName}`.trim(),
+        address: data.address, state: data.city, note: data.note || "", callbackUrl: `${location.origin}/checkout.html`,
+      };
+    } else if (giftMode) {
       paymentBody = {
         email: data.email,
         phone: data.phone,
@@ -1333,8 +1408,7 @@ async function submitCheckout(form) {
     const paymentPayload = await paymentResponse.json().catch(() => ({}));
     if (!paymentResponse.ok) throw new Error(friendlyMessage(paymentPayload.error, "Payment could not start."));
     const reference = paymentPayload.order?.id || paymentPayload.payment?.reference;
-    const mockPayment = paymentPayload.payment?.provider === "mock"
-      || !String(paymentPayload.payment?.authorization_url || "").includes("paystack");
+    const mockPayment = paymentPayload.payment?.provider === "mock";
     if (mockPayment) {
       showCheckoutConfirming(reference);
       await confirmPaidOrder(reference, { clearGift: giftMode });
@@ -1377,7 +1451,7 @@ function floatHeroBottle() {
 function startPageMotion() {
   if (!gsap || reduceMotion) return;
   gsap.from(".site-header__main > *", { y: -12, opacity: 0, stagger: .05, duration: .45, ease: "power2.out" });
-  gsap.from(".hero-copy > *, .page-intro > *, .gift-hero__copy > *, .contact-hero__copy > *", { y: 30, opacity: 0, stagger: .075, duration: .75, ease: "power3.out" });
+  gsap.from(".hero-copy > *, .page-intro > *, .gift-hero__copy > *", { y: 30, opacity: 0, stagger: .075, duration: .75, ease: "power3.out" });
   const bottle = $(".hero-bottle, .gift-hero__stage img");
   if (bottle) {
     gsap.fromTo(bottle, { y: 32, rotate: -4, opacity: 0 }, {
@@ -1546,7 +1620,12 @@ document.addEventListener("click", (event) => {
     renderCart();
     toast(`Delivery set to ${state.location}.`);
   }
-  if (category) { state.filters.category = category.dataset.filterCategory; renderShop(); }
+  if (category) {
+    state.filters.category = category.dataset.filterCategory;
+    updateShopUrl();
+    renderShop();
+    $$("[data-filter-category]").find((item) => item.dataset.filterCategory === state.filters.category)?.focus();
+  }
   if (authMode) { state.accountMode = authMode.dataset.authMode; renderAccount(); }
   if (event.target.closest("[data-signout]")) {
     closeAccountMenu();
@@ -1565,6 +1644,7 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-clear-filters]")) {
     state.filters = { category: "All", occasion: "", query: "", price: "all", sort: "featured" };
     const query = $("[data-shop-search]"); if (query) query.value = "";
+    updateShopUrl();
     renderShop();
   }
 });
@@ -1581,6 +1661,7 @@ document.addEventListener("input", (event) => {
 document.addEventListener("change", (event) => {
   if (event.target.matches("[data-shop-sort]")) { state.filters.sort = event.target.value; renderShop(); }
   if (event.target.matches("[data-price-filter]")) { state.filters.price = event.target.value; renderShop(); }
+  if (event.target.matches("[data-checkout-form] [name=city]")) renderCheckoutSummary();
 });
 
 document.addEventListener("submit", async (event) => {
@@ -1661,7 +1742,10 @@ async function boot() {
   } else {
     applyManagedContent();
   }
-  if (page === "shop") readShopUrl();
+  if (page === "shop") {
+    readShopUrl();
+    window.addEventListener("popstate", () => { readShopUrl(); renderShop(); });
+  }
   renderFeatured();
   renderJournal();
   renderBlogPage();
@@ -1669,20 +1753,26 @@ async function boot() {
   renderProductPage();
   renderGiftingPage();
   renderCart();
+  initContactForm();
   if (!paymentReturn) {
     configureGiftCheckoutUi();
+    if (page === "checkout" && (await runtimeConfig().catch(() => null))?.payments_available === false) {
+      $("[data-checkout-title]").textContent = "Online payment is unavailable.";
+      $("[data-checkout-lede]").textContent = "Contact Yodla to arrange your order.";
+      const form = $("[data-checkout-form]");
+      if (form) form.outerHTML = '<a class="button button--dark" href="/contact.html?subject=Order%20request">Contact Yodla</a>';
+    }
     renderCheckoutSummary();
     configureCheckoutSummary();
     enhanceCustomSelects(document);
   }
-  initContactWizard();
   renderAccount();
   configureMobileDisclosures();
   startHeroAutoplay();
   updateFabElevate();
   window.addEventListener("scroll", updateFabElevate, { passive: true });
   window.addEventListener("resize", updateFabElevate);
-  if (page === "checkout" && !paymentReturn && !isGiftCheckout() && state.cart.length) window.setTimeout(showHandoff, 600);
+  if (page === "checkout" && !paymentReturn && !content.catalogueManaged && !isGiftCheckout() && state.cart.length) window.setTimeout(showHandoff, 600);
   window.requestAnimationFrame(startPageMotion);
 }
 

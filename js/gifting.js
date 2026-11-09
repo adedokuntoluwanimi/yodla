@@ -1,30 +1,6 @@
 ﻿const GIFT_STORAGE_KEY = "yodla-gift-draft";
 export const MAX_RECIPIENTS = 5;
 export const ALL_RECIPIENTS = "__all__";
-export const GIFT_SLIDES = ["ribbon", "note", "selection", "finished"].map((name, i) => ({
-  label: ["Intro", "People", "Bottles", "Review"][i],
-  image: `assets/gifting/gift-${name}-cutout.webp`,
-  imageAlt: [
-    "Ribbon-wrapped wine bottle",
-    "Personal gift card and wine",
-    "A curated bottle selection",
-    "Finished wine gift arrangement",
-  ][i],
-  caption: [
-    "A little thought, beautifully bottled",
-    "For the people who matter",
-    "Their taste. Your thoughtfulness.",
-    "Every detail, considered",
-  ][i],
-  captionStrong: [
-    "Make their moment",
-    "Make it personal",
-    "Find their pour",
-    "Ready for their doorstep",
-  ][i],
-  stamp: "Selected\nwith\ncare",
-}));
-
 export function normalizeDraft(raw = {}) {
   const recipients = (Array.isArray(raw.recipients) ? raw.recipients : []).slice(0, 5).map((person, index) => ({
     ...person,

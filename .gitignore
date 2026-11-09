@@ -12,3 +12,4 @@ data/*.json
 
 assets/uploads/*
 !assets/uploads/.gitkeep
+/tmp/yodla-catalogue-local/

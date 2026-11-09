@@ -33,9 +33,9 @@ for (const name of pages) {
   let html = readFileSync(source, "utf8");
   if (name === "product" || name === "blog") html = html.replace('<meta charset="utf-8">', '<meta charset="utf-8"><base href="/">');
   if (name === "gifting") {
-    html = html.replace(/<section class="hero" data-gift-hero>[\s\S]*?<\/section>/, readFileSync(join(site, "gifting-hero.html"), "utf8"));
+    html = html.replace("<!-- Gift Club hero -->", readFileSync(join(site, "gifting-hero.html"), "utf8"))
+      .replace("<h1 data-gift-page-title>Gifting</h1>", "");
     html = html.replace('<div class="shell gift-flow__inner">', `<div class="shell gift-flow__inner">${readFileSync(join(site, "gifting-preview.html"), "utf8")}`);
-    html = html.replace("Gifting that<br><em>lands.</em>", "Let’s make<br><em>their moment.</em>");
   }
   if (name === "shop") {
     html = html.replace("Find your<br><em>next good pour.</em>", "Find their<br><em>kind of good.</em>")

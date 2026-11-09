@@ -5,6 +5,8 @@ import adminContent from "../admin/api/content.js";
 import adminDocument from "../admin/api/document.js";
 import adminPreview from "../admin/api/preview.js";
 import adminUpload from "../admin/api/upload.js";
+import catalogImport from "../admin/api/catalog-import.js";
+import sitemap from "../api/sitemap.js";
 import adminOrders from "../admin/api/orders.js";
 import adminSubscribers from "../admin/api/subscribers.js";
 import admins from "../api/admins.js";
@@ -46,6 +48,7 @@ async function concierge(request, response) {
     const content = await getPublishedContent();
     const result = await getConciergeResponse(body.message, {
       products: content.products,
+      catalogueManaged: content.catalogueManaged,
       sessionId: body.sessionId || "dev",
     });
     return sendJson(response, result.status, result.payload);
@@ -60,6 +63,7 @@ const adminHandlers = {
   "/admin/api/document": adminDocument,
   "/admin/api/preview": adminPreview,
   "/admin/api/upload": adminUpload,
+  "/admin/api/catalog-import": catalogImport,
   "/admin/api/admins": admins,
   "/admin/api/orders": adminOrders,
   "/admin/api/subscribers": adminSubscribers,
@@ -86,6 +90,7 @@ createServer(async (request, response) => {
     }
   }
   if (request.method === "GET" && parsedUrl.pathname === "/api/runtime-config") return runtimeConfig(request, response);
+  if (request.method === "GET" && parsedUrl.pathname === "/sitemap.xml") return sitemap(request, response);
   if (parsedUrl.pathname === "/api/admins") return admins(request, response);
   if (parsedUrl.pathname === "/api/contact") return contact(request, response);
   if (parsedUrl.pathname === "/api/admin/orders") return adminOrders(request, response);
@@ -119,7 +124,7 @@ createServer(async (request, response) => {
   const brandFile = brandIcons.has(safePath) ? resolve(join(root, "assets", "brand", safePath)) : null;
   const pageName = requestPath === "/" || !extname(requestPath) ? "index.html" : safePath.endsWith(".html") ? safePath : null;
   const pageFile = pageName ? resolve(join(root, "pages", pageName)) : null;
-  const rootCandidate = resolve(join(root, safePath || "index.html"));
+  const rootCandidate = /^(?:assets|css|js)[/\\]/.test(safePath) || safePath === "robots.txt" ? resolve(join(root, safePath)) : null;
   const file = [brandFile, pageFile, rootCandidate].find((candidate) => candidate && candidate.startsWith(root) && existsSync(candidate) && statSync(candidate).isFile()) || null;
 
   if (!file) {
@@ -134,4 +139,4 @@ createServer(async (request, response) => {
   }
   response.writeHead(200, { "Content-Type": types[extname(file).toLowerCase()] || "application/octet-stream" });
   createReadStream(file).pipe(response);
-}).listen(port, () => console.log(`Yodla is running at http://localhost:${port}`));
+}).listen(port, process.env.YODLA_BIND_HOST || undefined, () => console.log(`Yodla is running at http://localhost:${port}`));

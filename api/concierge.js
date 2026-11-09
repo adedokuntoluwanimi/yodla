@@ -14,6 +14,7 @@ export default async function handler(request, response) {
     const content = await getPublishedContent();
     const result = await getConciergeResponse(body.message, {
       products: content.products,
+      catalogueManaged: content.catalogueManaged,
       clientKey: clientKey(request),
       sessionId: body.sessionId || clientKey(request),
       history: Array.isArray(body.history) ? body.history : [],

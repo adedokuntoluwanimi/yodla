@@ -14,9 +14,13 @@ import {
   getOrder,
   saveCart,
   saveOrder,
+  withOrderLock,
 } from "../lib/orders.js";
 import { prepareGiftOrder } from "../lib/gift-order.js";
 import { normalizeGiftPayload } from "../lib/gift.js";
+import { prepareCatalogOrder } from "../lib/catalog-order.js";
+import { paymentsAvailable, paymentsUnavailable } from "../lib/payment-config.js";
+import { orderMinimum, purchaseReady, toKobo } from "../js/catalog-order.js";
 
 function productMap(products) {
   return new Map(products.map((product) => [product.id, product]));
@@ -83,6 +87,9 @@ async function verifyPaystack(reference) {
 }
 
 export async function handleCommerce(request, response, action) {
+  if (request.method === "POST" && ["create_payment", "create_order"].includes(action) && !paymentsAvailable()) {
+    return sendJson(response, 503, { error: paymentsUnavailable });
+  }
   const id = requestId(request);
   try {
     const user = await verifyRequestUser(request);
@@ -132,7 +139,7 @@ export async function handleCommerce(request, response, action) {
       if (!product) return sendJson(response, 404, { error: "Product not found." });
       const state = String(body.state || body.location || "");
       const availability = product.availability || {};
-      const status = availability[state] || (Object.values(availability)[0] || "unavailable");
+      const status = content.catalogueManaged && !purchaseReady(product) ? "unavailable" : availability[state] || (Object.values(availability)[0] || "unavailable");
       return sendJson(response, 200, { productId: product.id, state, status });
     }
 
@@ -157,12 +164,23 @@ export async function handleCommerce(request, response, action) {
     if (action === "add_to_cart" && request.method === "POST") {
       const body = await readJson(request, 4_000);
       if (!body.productId) return sendJson(response, 400, { error: "productId is required." });
-      const cart = await addToCart(body.cartId, body.productId, Number(body.quantity || 1));
+      const product = products.find((item) => item.id === body.productId);
+      const quantity = body.quantity ?? 1;
+      if (content.catalogueManaged && (!purchaseReady(product) || !Number.isInteger(quantity) || quantity < 1 || quantity > 10000)) {
+        return sendJson(response, 400, { error: "This item or quantity is unavailable for checkout." });
+      }
+      const limits = content.catalogueManaged ? { minimum: orderMinimum(product), maximum: 10000 } : undefined;
+      const cart = await addToCart(body.cartId, body.productId, Number(quantity || 1), limits);
       return sendJson(response, 200, { cart, lines: cartLines(cart, products) });
     }
 
     if (action === "calculate_order" && request.method === "POST") {
       const body = await readJson(request, 8_000);
+      if (content.catalogueManaged) {
+        const cart = body.cartId ? await getCart(body.cartId) : null;
+        const quote = prepareCatalogOrder(content, { ...body, state: body.state || cart?.location }, cart?.items || body.items);
+        return sendJson(response, 200, { lines: quote.lines, totals: quote.totals });
+      }
       const isGift = body.source === "gifting" || body.gift?.version === 2;
       const preparedGift = isGift ? prepareGiftOrder(body.gift, products) : null;
       if (isGift && (!String(body.name || "").trim() || !/^\S+@\S+\.\S+$/.test(body.email || "") || String(body.phone || "").replace(/\D/g, "").length < 7)) return sendJson(response, 400, { error: "Add your name, valid email, and phone number." });
@@ -195,24 +213,29 @@ export async function handleCommerce(request, response, action) {
 
     if (action === "create_payment" && request.method === "POST") {
       const body = await readJson(request, 100_000);
+      if (content.catalogueManaged && (!String(body.name || "").trim() || !/^\S+@\S+\.\S+$/.test(body.email || "")
+        || String(body.phone || "").replace(/\D/g, "").length < 7 || !String(body.address || "").trim() || !body.state)) {
+        return sendJson(response, 400, { error: "Add your name, email, phone, and delivery address." });
+      }
       const isGift = body.source === "gifting" || body.gift?.version === 2;
-      const preparedGift = isGift ? prepareGiftOrder(body.gift, products) : null;
-      if (isGift && (!String(body.name || "").trim() || !/^\S+@\S+\.\S+$/.test(body.email || "") || String(body.phone || "").replace(/\D/g, "").length < 7)) {
+      const preparedGift = isGift && !content.catalogueManaged ? prepareGiftOrder(body.gift, products) : null;
+      if (preparedGift && (!String(body.name || "").trim() || !/^\S+@\S+\.\S+$/.test(body.email || "") || String(body.phone || "").replace(/\D/g, "").length < 7)) {
         return sendJson(response, 400, { error: "Add your name, valid email, and phone number." });
       }
       const cart = !isGift && body.cartId ? await getCart(body.cartId) : null;
-      const lines = preparedGift
+      const preparedCatalog = content.catalogueManaged ? prepareCatalogOrder(content, body, cart?.items || body.items) : null;
+      const lines = preparedCatalog?.lines || (preparedGift
         ? preparedGift.lines
         : cart
           ? cartLines(cart, products)
           : (body.items || []).map((item) => {
             const product = products.find((entry) => entry.id === item.productId);
             return product ? { productId: product.id, name: product.name, price: product.price, quantity: item.quantity || 1 } : null;
-          }).filter(Boolean);
+          }).filter(Boolean));
       if (!lines.length) return sendJson(response, 400, { error: isGift ? "Choose bottles for your recipients." : "Cart is empty." });
-      const gift = preparedGift?.gift || normalizeGiftPayload(body.gift || {});
+      const gift = preparedGift?.gift || normalizeGiftPayload(preparedCatalog ? {} : body.gift || {});
       const giftWrap = Boolean(body.giftWrap || gift.wrap);
-      const totals = preparedGift?.totals || calculateTotals(lines, {
+      const totals = preparedCatalog?.totals || preparedGift?.totals || calculateTotals(lines, {
         state: body.state || body.location || "",
         giftWrap,
         discountNgn: body.discountNgn,
@@ -232,11 +255,12 @@ export async function handleCommerce(request, response, action) {
         giftWrap,
         gift: gift.recipients.length ? gift : null,
         cartId: cart?.id || "",
-        source: body.source || (isGift ? "gifting" : "checkout"),
+        source: preparedCatalog?.source || body.source || (isGift ? "gifting" : "checkout"),
+        ...(preparedCatalog?.hamper ? { hamper: preparedCatalog.hamper } : {}),
       });
       const payment = await initializePaystack({
         email: order.customer.email || "guest@yodla.ng",
-        amount: totals.total,
+        amount: totals.dueNow ?? totals.total,
         reference: order.id,
         callbackUrl: body.callbackUrl || `${process.env.PUBLIC_SITE_URL || ""}/checkout.html`,
         metadata: { orderId: order.id, trackingCode: order.trackingCode },
@@ -249,53 +273,60 @@ export async function handleCommerce(request, response, action) {
     if (action === "create_order" && request.method === "POST") {
       const body = await readJson(request, 8_000);
       const reference = body.reference || body.orderId;
-      const order = await getOrder(reference);
-      if (!order) return sendJson(response, 404, { error: "Order not found." });
-      const alreadyPaid = order.status === "paid" && order.paidAt;
-      if (!alreadyPaid) {
-        const verification = await verifyPaystack(reference);
-        if (verification.provider !== "mock" && (verification.currency !== "NGN" || verification.amount !== Math.round(order.totals.total * 100))) throw Object.assign(new Error("Payment amount could not be confirmed."), { status: 402 });
-        order.status = "paid";
-        order.paidAt = new Date().toISOString();
-        order.payment = { ...(order.payment || {}), verificationStatus: verification.status, verifiedAt: order.paidAt };
-        await saveOrder(order);
-        if (order.cartId) {
-          const cart = await getCart(order.cartId);
-          if (cart) {
-            cart.items = [];
-            await saveCart(cart);
+      return await withOrderLock(reference, async () => {
+        const order = await getOrder(reference);
+        if (!order) return sendJson(response, 404, { error: "Order not found." });
+        const alreadyPaid = order.payment?.verifiedAt || order.paidAt;
+        if (!alreadyPaid) {
+          if (!order.payment?.provider) return sendJson(response, 409, { error: "Payment has not started for this order." });
+          const verification = await verifyPaystack(reference);
+          if (verification.reference !== reference || (verification.provider === "mock") !== (order.payment.provider === "mock")
+            || (verification.provider !== "mock" && (verification.currency !== "NGN" || verification.amount !== toKobo(order.totals.dueNow ?? order.totals.total)))) {
+            throw Object.assign(new Error("Payment amount could not be confirmed."), { status: 402 });
           }
+          const verifiedAt = new Date().toISOString();
+          order.status = order.source === "wholesale" ? "deposit_paid" : "paid";
+          if (order.status === "paid") order.paidAt = verifiedAt;
+          order.payment = { ...order.payment, verificationStatus: verification.status, verifiedAt };
+          await saveOrder(order);
+          if (order.cartId) {
+            const cart = await getCart(order.cartId);
+            if (cart) {
+              cart.items = [];
+              await saveCart(cart);
+            }
+          }
+          // Don't block the shopper success page on SMTP / memory writes.
+          void sendOrderEmails(order).catch((error) => {
+            logError("order_emails_failed", error, { requestId: id, orderId: order.id });
+          });
+          void (async () => {
+            try {
+              const key = order.customer?.email || order.customer?.uid || "";
+              if (!key) return;
+              const enriched = {
+                ...order,
+                lines: (order.lines || []).map((line) => {
+                  const product = products.find((entry) => entry.id === line.productId);
+                  return {
+                    ...line,
+                    category: product?.category || "",
+                    occasions: product?.occasions || [],
+                  };
+                }),
+              };
+              const giftRecipients = order.gift?.recipients || [];
+              await rememberShopperOrder(key, enriched, {
+                gift: Boolean(giftRecipients.length) || /gift/i.test(String(order.customer?.note || "")),
+                recipientName: giftRecipients[0]?.name || order.customer?.name || "",
+              });
+            } catch (error) {
+              logError("shopper_memory_failed", error, { requestId: id, orderId: order.id });
+            }
+          })();
         }
-        // Don't block the shopper success page on SMTP / memory writes.
-        void sendOrderEmails(order).catch((error) => {
-          logError("order_emails_failed", error, { requestId: id, orderId: order.id });
-        });
-        void (async () => {
-          try {
-            const key = order.customer?.email || order.customer?.uid || "";
-            if (!key) return;
-            const enriched = {
-              ...order,
-              lines: (order.lines || []).map((line) => {
-                const product = products.find((entry) => entry.id === line.productId);
-                return {
-                  ...line,
-                  category: product?.category || "",
-                  occasions: product?.occasions || [],
-                };
-              }),
-            };
-            const giftRecipients = order.gift?.recipients || [];
-            await rememberShopperOrder(key, enriched, {
-              gift: Boolean(giftRecipients.length) || /gift/i.test(String(order.customer?.note || "")),
-              recipientName: giftRecipients[0]?.name || order.customer?.name || "",
-            });
-          } catch (error) {
-            logError("shopper_memory_failed", error, { requestId: id, orderId: order.id });
-          }
-        })();
-      }
-      return sendJson(response, 200, { order });
+        return sendJson(response, 200, { order });
+      });
     }
 
     if (action === "get_order_status" && request.method === "POST") {

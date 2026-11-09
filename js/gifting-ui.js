@@ -356,8 +356,6 @@ export function initGifting(options = {}) {
     stateSelect.innerHTML = `<option value="">Choose state</option>${NIGERIAN_STATES.map((state) => `<option value="${esc(state)}">${esc(state)}</option>`).join("")}`;
   }
 
-  // Hero imagery autoplay is owned by main.js (same path as the landing page).
-
   if ($("[data-gift-deck]")) {
     const params = new URLSearchParams(location.search);
     const requested = params.has("step") ? Number(params.get("step")) : readGiftDraft().step;

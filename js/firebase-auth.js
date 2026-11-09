@@ -26,7 +26,7 @@ const LOCAL_DEV_USER = Object.freeze({
   getIdToken: async () => "local-dev",
 });
 
-async function runtimeConfig() {
+export async function runtimeConfig() {
   if (!configPromise) {
     configPromise = fetch("/api/runtime-config", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error("Configuration unavailable."))));

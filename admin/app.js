@@ -3,10 +3,11 @@ import { enhanceCustomSelects } from "/js/custom-select.js";
 import { CATEGORIES, NIGERIAN_STATES } from "/js/states.js";
 
 const API = location.pathname.includes("/admin") ? "/admin/api" : "api";
+const localPreview = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
 const DEFAULT_OCCASIONS = ["Dinner", "Gift", "Gifting", "Weekend", "Toast"];
 const DEFAULT_SUBCATEGORIES = ["Prosecco", "Cognac", "Tennessee whisky", "Lager", "Red wine", "Sparkling rosé", "Gin", "Rum", "Vodka", "Sparkling mixer", "Malt drink", "Gift set"];
 const DEFAULT_ABV = ["0%", "5%", "11%", "12%", "13.5%", "40%", "43%", "Mixed"];
-const ORDER_STATUSES = ["awaiting_payment", "paid", "fulfilled", "cancelled", "refunded"];
+const ORDER_STATUSES = ["awaiting_payment", "deposit_paid", "paid", "fulfilled", "cancelled", "refunded"];
 const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
@@ -39,10 +40,12 @@ const state = {
   orderFilters: { q: "", status: "", state: "", from: "", to: "" },
   selectedOrderId: null,
   subscribers: [],
+  workbook: null,
 };
 const titles = {
   dashboard: ["The current edit", "On the shelf"],
   products: ["Inventory", "Bottles"],
+  import: ["Inventory", "Import spreadsheet"],
   blogs: ["Editorial", "Journal"],
   homepage: ["Merchandising", "Homepage"],
   taxonomy: ["Delivery", "States"],
@@ -276,6 +279,8 @@ function orderDetail(order) {
       <section><h3>Address</h3><p>${escapeHtml(customer.address || "—")}<br>${escapeHtml(customer.state || "")}${customer.note ? `<br><em>${escapeHtml(customer.note)}</em>` : ""}</p></section>
       <section><h3>Payment</h3><p>${escapeHtml(payment.provider || "—")}<br>Ref: ${escapeHtml(payment.reference || "—")}<br>${escapeHtml(payment.verificationStatus || order.status || "")}</p></section>
       <section><h3>Totals</h3><p>Subtotal ${money(totals.subtotal)}<br>Delivery ${money(totals.deliveryFee)}<br>${totals.giftFee ? `Gift wrap ${money(totals.giftFee)}<br>` : ""}${totals.discount ? `Discount −${money(totals.discount)}<br>` : ""}<strong>Total ${money(totals.total ?? order.total)}</strong></p></section>
+      ${order.source === "wholesale" ? `<section><h3>Wholesale balance</h3><p>Deposit ${money(totals.dueNow)}<br>${order.balanceCollectedAt ? `Collected ${money(totals.balanceDue)} on ${formatDate(order.balanceCollectedAt)}` : `Due on delivery ${money(totals.balanceDue)}`}</p>${order.status === "deposit_paid" ? `<form data-collect-balance><input type="hidden" name="id" value="${escapeHtml(order.id)}"><label class="checkbox"><input type="checkbox" required> I received the balance</label><button class="button button--dark">Mark balance collected</button></form>` : ""}</section>` : ""}
+      ${order.hamper ? `<section><h3>Hamper</h3><p>Service fee ${money(totals.serviceFee)}<br>VAT on service fee ${money(totals.serviceVat)}<br>Gift note ${escapeHtml(order.hamper.note || "—")}<br>Mug text ${escapeHtml(order.hamper.mugText || "—")}</p></section>` : ""}
       ${order.gift?.recipients?.length ? `<section><h3>Gift notify</h3><p>${(order.gift.recipients || []).map((person) => `${escapeHtml(person.name || "—")} · ${escapeHtml(person.email || "")}`).join("<br>")}${order.gift.message ? `<br><em>${escapeHtml(order.gift.message)}</em>` : ""}</p></section>` : ""}
     </div>
     <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Line</th></tr></thead><tbody>${lines}</tbody></table></div>
@@ -321,6 +326,7 @@ function render() {
   if (state.editing) target.innerHTML = editor(state.editing);
   else if (state.view === "dashboard") target.innerHTML = renderDashboard();
   else if (state.view === "products") target.innerHTML = productList();
+  else if (state.view === "import") target.innerHTML = importPanel();
   else if (state.view === "blogs") target.innerHTML = blogList();
   else if (state.view === "homepage") target.innerHTML = singletonForm("homePage");
   else if (state.view === "taxonomy") target.innerHTML = singletonForm("taxonomy");
@@ -329,6 +335,54 @@ function render() {
   else if (state.view === "admins") target.innerHTML = adminsPanel();
   else target.innerHTML = singletonForm("siteSettings");
   queueMicrotask(() => enhanceCustomSelects(target));
+}
+
+function importPanel() {
+  const review = state.workbook?.review;
+  const labels = { added: "Additions", updated: "Updates", removed: "Unpublish", inquiry: "Shown without checkout", unchanged: "Unchanged" };
+  return `<section class="form-panel">
+    <h2>Review a new catalogue</h2><p>Upload the three-tab .xlsx workbook. Publishing replaces the previous catalogue. Items missing from the workbook are unpublished.</p>
+    <button type="button" class="button button--quiet" data-catalog-template>Download template</button>
+    <form class="form-grid" data-catalog-upload><label>Catalogue workbook<input type="file" name="workbook" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></label><div><button class="button button--dark">Review workbook</button></div></form>
+  </section>
+  ${review ? `<section class="form-panel"><h2>${escapeHtml(state.workbook.name)}</h2>
+    ${review.errors.length ? `<h3>Fix these workbook rows</h3><ul>${review.errors.map((issue) => `<li>${escapeHtml(issue.sheet)}${issue.row ? ` · row ${issue.row}` : ""} · ${escapeHtml(issue.message)}</li>`).join("")}</ul>` : ""}
+    ${Object.entries(labels).map(([key, label]) => `<details ${key === "removed" && review.changes[key].length ? "open" : ""}><summary>${label} (${review.changes[key].length})</summary><ul>${review.changes[key].map((item) => `<li>${escapeHtml(item.name)} · ${escapeHtml(item.section)} <small>${escapeHtml(item.id)}</small>${item.details?.length ? `<br><small>${escapeHtml(item.details.join(" · "))}</small>` : ""}</li>`).join("")}</ul></details>`).join("")}
+    ${review.errors.length ? "" : `<form data-catalog-publish><label class="checkbox"><input type="checkbox" required> I reviewed the changes and removals</label><button class="button button--ember">Publish catalogue</button></form>`}</section>` : ""}`;
+}
+
+async function handleWorkbookForm(form) {
+  const button = form.querySelector("button");
+  button.disabled = true;
+  const publishing = form.matches("[data-catalog-publish]");
+  try {
+    if (!publishing) {
+      state.workbook = null;
+      const file = form.elements.workbook.files[0];
+      if (!file || !/\.xlsx$/i.test(file.name) || file.size > 2_000_000) throw new Error("Choose an .xlsx workbook under 2 MB.");
+      const url = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("The workbook could not be read."));
+        reader.readAsDataURL(file);
+      });
+      const workbook = url.split(",")[1];
+      const review = await request("catalog-import", { method: "POST", body: JSON.stringify({ workbook }) });
+      state.workbook = { name: file.name, workbook, review };
+      status(review.errors.length ? "Check the flagged rows and upload a corrected workbook." : "Review the changes before publishing.", review.errors.length ? "error" : "success");
+    } else {
+      const { workbook, review } = state.workbook;
+      await request("catalog-import", { method: "POST", body: JSON.stringify({ workbook, confirmation: review.token }) });
+      state.workbook = null;
+      await load(false);
+      status("Catalogue published. Reload the storefront to see the new revision.", "success");
+    }
+  } catch (error) {
+    if (error.status === 409) state.workbook = null;
+    status(error.message, "error");
+  } finally {
+    if (state.view === "import") render();
+  }
 }
 
 function readDiscovery(data, prefix) {
@@ -525,7 +579,7 @@ async function load(initial = true) {
     state.documents = payload.documents;
     state.counts = payload.counts;
     state.persist = payload.persist || {};
-    $("[data-connection]").textContent = state.persist.durable ? "Published shelf is live" : "Shelf is local to this instance";
+    $("[data-connection]").textContent = localPreview ? "Local catalogue preview" : state.persist.durable ? "Published shelf is live" : "Shelf is local to this instance";
     if (initial) status(state.persist.durable ? "Content shelf is ready." : "Shelf loaded without durable storage. Published changes may not survive a restart.", state.persist.durable ? "success" : "");
     render();
     if (state.view === "orders") loadOrders();
@@ -536,6 +590,19 @@ async function load(initial = true) {
 }
 
 document.addEventListener("click", async (event) => {
+  if (event.target.closest("[data-catalog-template]")) {
+    try {
+      const response = await authorizedFetch(`${API}/catalog-import`);
+      if (!response.ok) throw new Error("The template could not be downloaded.");
+      const url = URL.createObjectURL(await response.blob());
+      const link = Object.assign(document.createElement("a"), { href: url, download: "yodla-catalog-template.xlsx" });
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      status(error.message, "error");
+    }
+    return;
+  }
   if (event.target.closest("[data-open-shelf]")) return setShelfOpen(true);
   if (event.target.closest("[data-close-shelf]") || event.target.closest("[data-shelf-backdrop]")) return setShelfOpen(false);
   const view = event.target.closest("[data-view]");
@@ -598,7 +665,7 @@ async function bootAdmin() {
   }
   state.adminUser = accountFromUser(user);
   const banner = document.querySelector(".admin-exposure");
-  if (banner) banner.innerHTML = `<strong>Signed in as ${escapeHtml(state.adminUser.email)}</strong><span>Publishes change the live storefront.</span><button type="button" class="text-link" data-admin-signout>Sign out</button>`;
+  if (banner) banner.innerHTML = `<strong>Signed in as ${escapeHtml(state.adminUser.email)}</strong><span>${localPreview ? "Publishes change this local preview." : "Publishes change the live storefront."}</span><button type="button" class="text-link" data-admin-signout>Sign out</button>`;
   const [kicker, title] = titles[state.view] || titles.dashboard;
   $("[data-kicker]").textContent = kicker;
   $("[data-title]").textContent = title;
@@ -609,6 +676,24 @@ async function bootAdmin() {
 }
 
 document.addEventListener("submit", async (event) => {
+  if (event.target.matches("[data-catalog-upload], [data-catalog-publish]")) {
+    event.preventDefault();
+    return handleWorkbookForm(event.target);
+  }
+  if (event.target.matches("[data-collect-balance]")) {
+    event.preventDefault();
+    const button = event.target.querySelector("button");
+    button.disabled = true;
+    try {
+      await request("orders", { method: "POST", body: JSON.stringify({ id: event.target.elements.id.value, action: "collect_balance" }) });
+      await loadOrders();
+      status("Balance marked as collected.", "success");
+    } catch (error) {
+      button.disabled = false;
+      status(error.message, "error");
+    }
+    return;
+  }
   if (event.target.matches("[data-orders-filter]")) {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.target));

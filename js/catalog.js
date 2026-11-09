@@ -256,8 +256,16 @@ export function getAvailability(product, location) {
   const availability = product.availability || {};
   if (availability[location]) return availability[location];
   const values = Object.values(availability);
+  if (!values.length && product.catalogKind) return "choose-location";
   if (values.length === 1) return values[0];
   return "unavailable";
+}
+
+export function cataloguePhotoStyle(product) {
+  if (!product.image?.startsWith("/assets/products/catalogue/")) return "";
+  if (["Ice Packs", "Extras"].includes(product.category)) return "";
+  if (["Cocktails", "Mocktails"].includes(product.category) || product.image.endsWith("/grant-whisky.webp")) return "scene";
+  return /\/(?:chivita|red-wine|white-wine)\.webp$/.test(product.image) ? "grey-packshot" : "packshot";
 }
 
 export function filterProducts(filters = {}) {

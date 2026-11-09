@@ -1,7 +1,7 @@
 import { withAdmin } from "../lib/guard.js";
 import { body, json } from "../lib/http.js";
 import { prepare, validate } from "../lib/model.js";
-import { persistStatus, saveDocument, slugTaken } from "../../lib/content-store.js";
+import { isManagedProduct, persistStatus, saveDocument, slugTaken } from "../../lib/content-store.js";
 
 export default async function handler(request, response) {
   return withAdmin(request, response, async () => {
@@ -11,9 +11,10 @@ export default async function handler(request, response) {
       const action = String(input.action || "save");
       if (!["save", "publish", "unpublish", "archive"].includes(action)) return json(response, 400, { error: "Unknown publishing action." });
       const document = prepare(input.document);
-      const errors = validate(document, action === "publish");
+      const managed = document._type === "product" && await isManagedProduct(document._id);
+      const errors = managed ? {} : validate(document, action === "publish");
       if (Object.keys(errors).length) return json(response, 422, { error: "Fix the highlighted fields before continuing.", errors });
-      if (["product", "blogPost"].includes(document._type) && await slugTaken(document._type, document.slug.current, document._id)) {
+      if (!managed && ["product", "blogPost"].includes(document._type) && await slugTaken(document._type, document.slug.current, document._id)) {
         return json(response, 409, { error: "That URL slug is already in use.", errors: { slug: "Choose a unique slug." } });
       }
       const result = await saveDocument(document, action);
@@ -26,6 +27,7 @@ export default async function handler(request, response) {
       };
       return json(response, 200, { ok: true, action, id: document._id, persist: result.persist, message: messages[action] });
     } catch (error) {
+      if (error.status === 409) return json(response, 409, { error: error.message });
       console.error("Admin document mutation:", error.message);
       return json(response, 500, { error: "Yodla could not save that change. Your form is still here; try again." });
     }
